@@ -28,8 +28,7 @@ def draw_2d_filters(filters):
         x = int(i % mosaic_size) * h
         y = int(i / mosaic_size) * w
         mosaic[x:x + h, y:y + w] = cv2.convertScaleAbs(individual_filter)
-    cv2.imshow("test", mosaic)
-    cv2.waitKey()
+    return mosaic
 
 if __name__ == '__main__':
 
@@ -53,4 +52,8 @@ if __name__ == '__main__':
     filters = torch2numpy(filters)
     filters = dict2list(filters)
     for filter in filters:
-        draw_2d_filters(filter)
+        mosaic = draw_2d_filters(filter)
+        mosaic = cv2.resize(mosaic, (800, 800), interpolation=cv2.INTER_CUBIC)
+        cv2.imshow("test", mosaic)
+        cv2.waitKey()
+
