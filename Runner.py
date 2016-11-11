@@ -3,6 +3,33 @@ import PyTorchHelpers
 import cv2
 import os
 import numpy as np
+import math
+
+
+def torch2numpy(data):
+    if isinstance(data, dict):
+        for key, value in data.iteritems():
+            data[key] = value.asNumpyTensor()
+    return data
+
+
+def dict2list(dict):
+    index = [k for k in dict.keys()]
+    index.sort()
+    return [dict[i] for i in index]
+
+
+def draw_2d_filters(filters):
+    filters = np.squeeze(filters)
+    n, w, h = filters.shape
+    mosaic_size = math.ceil(math.sqrt(n))
+    mosaic = np.zeros((mosaic_size * w, mosaic_size * h), dtype=np.uint8)
+    for i, individual_filter in enumerate(filters):
+        x = int(i % mosaic_size) * h
+        y = int(i / mosaic_size) * w
+        mosaic[x:x + h, y:y + w] = cv2.convertScaleAbs(individual_filter)
+    cv2.imshow("test", mosaic)
+    cv2.waitKey()
 
 if __name__ == '__main__':
 
@@ -22,5 +49,8 @@ if __name__ == '__main__':
     img = img.reshape(1, 3, newsize, newsize)
 
     flashlight.build_model()
-    flashlight.get_layer_responses(img)
-    flashlight.visualize_filter_responses(img, 'frog-1', True, filterResponsesFolderName)
+    filters = flashlight.get_layer_responses(img)
+    filters = torch2numpy(filters)
+    filters = dict2list(filters)
+    for filter in filters:
+        draw_2d_filters(filter)

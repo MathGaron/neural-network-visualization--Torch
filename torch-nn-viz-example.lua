@@ -180,61 +180,9 @@ function Flashlight:get_layer_responses(image)
         activation:resize(curModule.output:nElement())
         activation:copy(curModule.output)
         curModule['ADDED_NAME'] = torch.type(curModule)
-        table.insert(self.filterResponses, curModule)
+        table.insert(self.filterResponses, curModule.output)
     end
-end
-
--- Generate gnuplots from the passed in table of filter responses
--- place individual folders which will hold the filter responses into the
--- directory specified by objectName
-function Flashlight:visualize_filter_responses(originalImage, objectName, display, path)
-    if not display and not objectName then
-        print('\n\n\n')
-        print('YOU MUST INCLUDE AN OBJECT NAME IF YOU ARE SAVING TO FILE!!!!')
-        return
-    end
-    local figLayerId = 10
-    for k, v in ipairs(self.filterResponses) do
-        print("Number of Filter responses for this layer: ")
-        print(v.output:size(2))
-        for i = 1, v.output:size(2) do
-            -- Direct Display
-            if display then
-                gnuplot.figure(k * figLayerId + i);
-                gnuplot.imagesc(v.output[1][i])
-            -- Save To File
-            else
-                local objectFolderName = 'object-' .. objectName
-                objectFolderName = paths.concat(path, objectFolderName)
-                local layerFolderName = 'layer-' .. tostring(k)
-                layerFolderName = paths.concat(objectFolderName, layerFolderName)
-                local filePath = paths.concat(layerFolderName, 'filter-' .. tostring(i))
-
-                if not paths.dir(objectFolderName) then
-                    paths.mkdir(objectFolderName)
-                end
-                if not paths.dir(layerFolderName) then
-                    paths.mkdir(layerFolderName)
-                end
-
-                gnuplot.pngfigure(filePath)
-                gnuplot.imagesc(v.output[1][i])
-                gnuplot.plotflush()
-            end
-
-            if i > 5 then
-                break
-            end
-        end
-        break
-        --figLayerId = figLayerId * 10
-    end
-    gnuplot.figure(1)
-    gnuplot.imagesc(originalImage[1][1])
-    gnuplot.figure(2)
-    gnuplot.imagesc(originalImage[1][2])
-    gnuplot.figure(3)
-    gnuplot.imagesc(originalImage[1][3])
+    return self.filterResponses
 end
 
 -- Close all gnuplot windows
