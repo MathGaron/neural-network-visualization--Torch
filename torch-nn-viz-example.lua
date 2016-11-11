@@ -3,12 +3,15 @@ require 'image'
 require 'gnuplot'
 require 'nn'
 
--- Default folder names
-local filterResponsesFolderName = 'filter-responses'
-local imageFolderName = 'images'
+local Flashlight = torch.class('Flashlight')
+
+function Flashlight:__init(backend)
+    self.backend = backend
+
+end
 
 -- Very Simple test for gnuplot
-local function gnuplotTest()
+function Flashlight:gnuplot_test()
     a = image.lena();
     gnuplot.figure(1);
     gnuplot.imagesc(a[1])
@@ -31,7 +34,7 @@ end
 --                  the 5x5 convolutional layer
 -- ReLU activations are applied after each convolutional layer
 -- This module might be extended to allow for arbitrary width
-local function inceptionModule(inputChannels, outputChannels, reductions, expansions)
+function Flashlight:inception_module(inputChannels, outputChannels, reductions, expansions)
 
     computedOutputChannels = reductions[1] + expansions[1] + expansions[2] + reductions[4]
     if not (outputChannels == computedOutputChannels) then
@@ -88,9 +91,9 @@ local function inceptionModule(inputChannels, outputChannels, reductions, expans
     return inception
 end
 
-local function secondArch()
+function Flashlight:build_model()
 
-    net = nn.Sequential()
+    local net = nn.Sequential()
     net:add(nn.SpatialConvolution(3, 64, 
         5, 5,
         1, 1))
@@ -112,7 +115,7 @@ local function secondArch()
         256,
         64
     }
-    net:add(inceptionModule(128, 512, reductions, expansions))
+    net:add(self:inception_module(128, 512, reductions, expansions))
     net:add(nn.SpatialConvolution(512, 768, 3, 3, 1, 1))
     net:add(nn.SpatialMaxPooling(3, 3, 2, 2))
     -- Inception Module
@@ -126,7 +129,7 @@ local function secondArch()
         320,
         512
     }
-    net:add(inceptionModule(768, 1024, reductions, expansions))
+    net:add(self:inception_module(768, 1024, reductions, expansions))
     net:add(nn.SpatialAveragePooling(5, 5, 1, 1))
     net:add(nn.View(1024))
     net:add(nn.Linear(1024, 512))
@@ -134,8 +137,12 @@ local function secondArch()
     net:add(nn.Linear(512, 256))
     net:add(nn.Dropout(0.4))
     net:add(nn.Linear(256, 10))
-    print(net)
-    return net
+    --print(net)
+    self.net = net
+    if self.backend == "cpu" then
+        self.net:float()
+    end
+
 end
 
 -------------------------------------------------------------------------------
@@ -145,15 +152,18 @@ end
 -- SpatialBatchNormalization requires batches of images, visualization 
 -- explicitly uses only a single image
 -- There may be other layer types that have this problem that I am unaware of
-local function loadModel()
-    net = torch.load('model-nets/model--float.net')
+function Flashlight:load_model()
+    local net = torch.load('model-nets/model--float.net')
     for i, module in ipairs(net.modules) do
         if torch.type(module) == 'nn.SpatialBatchNormalization' then
             net:remove(i)
         end
     end
     print(net)
-    return net
+    self.net = net
+    if self.backend == "cpu" then
+        self.net:float()
+    end
 end
 
 -- Retrieve the filter responses caused by passing the image through the model
@@ -161,44 +171,41 @@ end
 -- added to it which contains the name of the layer type. This is to make
 -- reviewing filter responses and mapping them back to layers easier...
 -- Return the filter responses in a table 
-local function getLayerResponses(model, image)
-    model:evaluate()
-    model:forward(image)
-    filterResponses = {}
-    for i, curModule in ipairs(model.modules) do
+function Flashlight:get_layer_responses(image)
+    self.net:evaluate()
+    self.net:forward(image)
+    self.filterResponses = {}
+    for i, curModule in ipairs(self.net.modules) do
         local activation = curModule.output.new()
         activation:resize(curModule.output:nElement())
         activation:copy(curModule.output)
         curModule['ADDED_NAME'] = torch.type(curModule)
-        table.insert(filterResponses, curModule)
+        table.insert(self.filterResponses, curModule)
     end
-    print(filterResponses)
-    return filterResponses
 end
 
 -- Generate gnuplots from the passed in table of filter responses
 -- place individual folders which will hold the filter responses into the
 -- directory specified by objectName
-local function visualizeFilterResponses(filterResponses, originalImage, objectName) 
-    local DIRECT_DISPLAY = false
-    if not DIRECT_DISPLAY and not objectName then
+function Flashlight:visualize_filter_responses(originalImage, objectName, display, path)
+    if not display and not objectName then
         print('\n\n\n')
         print('YOU MUST INCLUDE AN OBJECT NAME IF YOU ARE SAVING TO FILE!!!!')
         return
     end
     local figLayerId = 10
-    for k, v in ipairs(filterResponses) do
+    for k, v in ipairs(self.filterResponses) do
         print("Number of Filter responses for this layer: ")
         print(v.output:size(2))
         for i = 1, v.output:size(2) do
             -- Direct Display
-            if DIRECT_DISPLAY then
+            if display then
                 gnuplot.figure(k * figLayerId + i);
                 gnuplot.imagesc(v.output[1][i])
             -- Save To File
             else
                 local objectFolderName = 'object-' .. objectName
-                objectFolderName = paths.concat(filterResponsesFolderName, objectFolderName)
+                objectFolderName = paths.concat(path, objectFolderName)
                 local layerFolderName = 'layer-' .. tostring(k)
                 layerFolderName = paths.concat(objectFolderName, layerFolderName)
                 local filePath = paths.concat(layerFolderName, 'filter-' .. tostring(i))
@@ -220,7 +227,7 @@ local function visualizeFilterResponses(filterResponses, originalImage, objectNa
             end
         end
         break
-        figLayerId = figLayerId * 10
+        --figLayerId = figLayerId * 10
     end
     gnuplot.figure(1)
     gnuplot.imagesc(originalImage[1][1])
@@ -231,34 +238,6 @@ local function visualizeFilterResponses(filterResponses, originalImage, objectNa
 end
 
 -- Close all gnuplot windows
-local function clearGnuPlots()
+function Flashlight:clear_gnu_plots()
     os.execute('pkill gnuplot')
 end
-
-
--------------------------------------------------------------------------------
------------------------------MAIN RUNNER CODE----------------------------------
--------------------------------------------------------------------------------
-
-clearGnuPlots()
-
--- Flip between model loaded from file and secondArch defined above in function
-local USE_LOADED_MODEL = false
-
--- Load image
-local fileName = paths.concat(imageFolderName, '1.png')
-testImage = image.load(fileName, 3, 'float')
-testImage = testImage:reshape(1, 3, 32, 32)
-print("Input to model dimensions: ")
-print(testImage:size())
--- Load model from file or use test model to validate
-if USE_LOADED_MODEL then
-    model = loadModel()
-else
-    testImage = testImage:type('torch.DoubleTensor')
-    model = secondArch()
-end
-
--- Get filter responses and visualize
-filterResponses = getLayerResponses(model, testImage)
-visualizeFilterResponses(filterResponses, testImage, 'frog-1')
