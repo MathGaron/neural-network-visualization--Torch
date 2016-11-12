@@ -2,6 +2,7 @@ require 'torch'
 require 'image'
 require 'gnuplot'
 require 'nn'
+require 'loadcaffe'
 
 local Flashlight = torch.class('Flashlight')
 
@@ -154,16 +155,35 @@ end
 -- There may be other layer types that have this problem that I am unaware of
 function Flashlight:load_model()
     local net = torch.load('model-nets/model--float.net')
-    for i, module in ipairs(net.modules) do
-        if torch.type(module) == 'nn.SpatialBatchNormalization' then
-            net:remove(i)
-        end
-    end
+    self:remove_batch_norm(net)
     print(net)
     self.net = net
     if self.backend == "cpu" then
         self.net:float()
     end
+end
+
+function Flashlight:load_caffe_model(model, weights)
+    self.net = loadcaffe.load(model, weights)
+    self:remove_batch_norm(self.net)
+    print(self.net)
+    if self.backend == "cpu" then
+        self.net:float()
+    end
+end
+
+function Flashlight:remove_batch_norm(net)
+    for i, module in ipairs(net.modules) do
+        if torch.type(module) == 'nn.SpatialBatchNormalization' then
+            net:remove(i)
+        end
+    end
+end
+
+function Flashlight:predict(image)
+    self.net:evaluate()
+    local output = self.net:forward(image)
+    return output
 end
 
 -- Retrieve the filter responses caused by passing the image through the model
@@ -172,8 +192,7 @@ end
 -- reviewing filter responses and mapping them back to layers easier...
 -- Return the filter responses in a table 
 function Flashlight:get_layer_responses(image)
-    self.net:evaluate()
-    self.net:forward(image)
+    self:predict(image)
     self.filterResponses = {}
     for i, curModule in ipairs(self.net.modules) do
         local activation = curModule.output.new()

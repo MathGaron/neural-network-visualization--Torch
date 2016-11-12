@@ -4,6 +4,7 @@ import cv2
 import os
 import numpy as np
 import math
+import json
 
 
 def torch2numpy(data):
@@ -31,9 +32,14 @@ def draw_2d_filters(filters):
     return mosaic
 
 if __name__ == '__main__':
-
+    # load lua files
     Flashlight = PyTorchHelpers.load_lua_class("torch-nn-viz-example.lua", 'Flashlight')
     flashlight = Flashlight("cpu")
+
+    # load params
+    path_to_config = "config/param.json"
+    with open(path_to_config) as json_data:
+        settings = json.load(json_data)
 
     # Default folder names
     filterResponsesFolderName = 'filter-responses'
@@ -42,18 +48,23 @@ if __name__ == '__main__':
     flashlight.clear_gnu_plots()
 
     filename = os.path.join(imageFolderName, 'lena.png')
-    newsize = 32
+    newsize = 224
     img = cv2.imread(filename)
+    cv2.imshow("input", img)
     img = cv2.resize(img, (newsize, newsize), interpolation=cv2.INTER_CUBIC).astype(np.float32)
     img = img.reshape(1, 3, newsize, newsize)
 
-    flashlight.build_model()
+    #flashlight.build_model()
+    model_path = settings["caffe_model_path"].encode('ascii', 'ignore')
+    flashlight.load_caffe_model(os.path.join(model_path, "VGG_CNN_M_deploy.prototxt"),
+                                os.path.join(model_path, "VGG_CNN_M.caffemodel"))
+
     filters = flashlight.get_layer_responses(img)
     filters = torch2numpy(filters)
     filters = dict2list(filters)
     for filter in filters:
         mosaic = draw_2d_filters(filter)
         mosaic = cv2.resize(mosaic, (800, 800), interpolation=cv2.INTER_CUBIC)
-        cv2.imshow("test", mosaic)
+        cv2.imshow("filters", mosaic)
         cv2.waitKey()
 
