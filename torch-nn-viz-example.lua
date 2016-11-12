@@ -203,8 +203,7 @@ end
 -- added to it which contains the name of the layer type. This is to make
 -- reviewing filter responses and mapping them back to layers easier...
 -- Return the filter responses in a table 
-function Flashlight:get_convolution_activation(image)
-    self:predict(image)
+function Flashlight:get_convolution_activation()
     self.filterResponses = {}
     for i, curModule in ipairs(self.net.modules) do
         curModule['ADDED_NAME'] = torch.type(curModule)

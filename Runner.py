@@ -3,11 +3,13 @@ import PyTorchHelpers
 import cv2
 import os
 import numpy as np
-import math
 import json
+
+from SpatialActivationViewer import SpatialActivationViewer
 
 from sklearn import datasets
 
+activation_viewer = SpatialActivationViewer()
 
 def torch2numpy(data):
     if isinstance(data, dict):
@@ -22,18 +24,6 @@ def dict2list(dict):
     return [dict[i] for i in index]
 
 
-def draw_2d_filters(filters):
-    filters = np.squeeze(filters)
-    n, w, h = filters.shape
-    mosaic_size = math.ceil(math.sqrt(n))
-    mosaic = np.zeros((mosaic_size * w, mosaic_size * h), dtype=np.uint8)
-    for i, individual_filter in enumerate(filters):
-        x = int(i % mosaic_size) * h
-        y = int(i / mosaic_size) * w
-        mosaic[x:x + h, y:y + w] = cv2.convertScaleAbs(individual_filter)
-    return mosaic
-
-
 def prepare_image(img, newsize):
     img = cv2.resize(img, (newsize, newsize), interpolation=cv2.INTER_CUBIC).astype(np.float32)
     img[:, :, 0] -= 103.939
@@ -42,6 +32,10 @@ def prepare_image(img, newsize):
     img = img.transpose((2, 0, 1))
     return img.reshape(1, 3, newsize, newsize)
 
+
+def mouse_click(event,x,y,flags,param):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        activation_viewer.filter_selection(x, y)
 
 if __name__ == '__main__':
     # load lua files
@@ -71,33 +65,37 @@ if __name__ == '__main__':
 
     # run webcam
     cap = cv2.VideoCapture(0)
+    cv2.namedWindow("filters")
+    cv2.setMouseCallback("filters", mouse_click)
     filter_selection = 0
     while (True):
         # Capture and process image
         ret, frame = cap.read()
-        cv2.imshow('frame', frame)
+        cv2.imshow("frame", frame)
         img = prepare_image(frame, 224)
         # output prediction
-        #output = flashlight.predict(img).asNumpyTensor()
+        output = flashlight.predict(img).asNumpyTensor()
         #print classes[np.argmax(output)]
-
-        filters = flashlight.get_convolution_activation(img)
+        filters = flashlight.get_convolution_activation()
         filters = torch2numpy(filters)
         filters = dict2list(filters)
-        mosaic = draw_2d_filters(filters[filter_selection])
+        activation_viewer.update_filter_data(filters)
+        mosaic, filter_img = activation_viewer.draw(filters)
         mosaic = cv2.resize(mosaic, (800, 800), interpolation=cv2.INTER_CUBIC)
         cv2.imshow("filters", mosaic)
+        if filter_img is not None:
+            filter_img = cv2.resize(filter_img, (300, 300), interpolation=cv2.INTER_CUBIC)
+            cv2.imshow("filter_image", filter_img)
 
         # keyboard control
         k = cv2.waitKey(33)
-        if k == 27:  # Esc key to stop
+        if k == 1113927:  # Esc key to stop
             break
         elif k == 1113939:  # left arrow
-            filter_selection = (filter_selection + 1) % len(filters)
-            print("Filter_selection : {}".format(filter_selection))
+            activation_viewer.layer_selection_increment(1)
         elif k == 1113937:  # right arrow
-            filter_selection = (filter_selection - 1) % len(filters)
-            print("Filter_selection : {}".format(filter_selection))
+            activation_viewer.layer_selection_increment(-1)
+
         #else:
         #    print(k)
     # When everything done, release the capture
