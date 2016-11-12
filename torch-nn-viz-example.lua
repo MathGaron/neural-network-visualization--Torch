@@ -203,15 +203,17 @@ end
 -- added to it which contains the name of the layer type. This is to make
 -- reviewing filter responses and mapping them back to layers easier...
 -- Return the filter responses in a table 
-function Flashlight:get_layer_responses(image)
+function Flashlight:get_convolution_activation(image)
     self:predict(image)
     self.filterResponses = {}
     for i, curModule in ipairs(self.net.modules) do
-        local activation = curModule.output.new()
-        activation:resize(curModule.output:nElement())
-        activation:copy(curModule.output)
         curModule['ADDED_NAME'] = torch.type(curModule)
-        table.insert(self.filterResponses, curModule.output)
+        if curModule.ADDED_NAME == "nn.SpatialConvolution" then
+            local activation = curModule.output.new()
+            activation:resize(curModule.output:nElement())
+            activation:copy(curModule.output)
+            table.insert(self.filterResponses, curModule.output:float())
+        end
     end
     return self.filterResponses
 end

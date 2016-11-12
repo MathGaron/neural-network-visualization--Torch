@@ -56,46 +56,51 @@ if __name__ == '__main__':
     # Default folder names
     filterResponsesFolderName = 'filter-responses'
     imageFolderName = 'images'
-
     flashlight.clear_gnu_plots()
 
-
+    # load/build model
     #flashlight.build_model()
     model_path = settings["caffe_model_path"].encode('ascii', 'ignore')
     flashlight.load_caffe_model(os.path.join(model_path, "VGG_CNN_M_deploy.prototxt"),
                                 os.path.join(model_path, "VGG_CNN_M.caffemodel"))
+    # Setup class name
     classes = []
     with open(settings["dataset_classe_file"]) as file:
         for line in file:
             classes.append(line)
 
+    # run webcam
     cap = cv2.VideoCapture(0)
-
+    filter_selection = 0
     while (True):
-        # Capture frame-by-frame
+        # Capture and process image
         ret, frame = cap.read()
-
         cv2.imshow('frame', frame)
         img = prepare_image(frame, 224)
-        output = flashlight.predict(img).asNumpyTensor()
-        print classes[np.argmax(output)]
+        # output prediction
+        #output = flashlight.predict(img).asNumpyTensor()
+        #print classes[np.argmax(output)]
 
-        # Display the resulting frame
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        filters = flashlight.get_convolution_activation(img)
+        filters = torch2numpy(filters)
+        filters = dict2list(filters)
+        mosaic = draw_2d_filters(filters[filter_selection])
+        mosaic = cv2.resize(mosaic, (800, 800), interpolation=cv2.INTER_CUBIC)
+        cv2.imshow("filters", mosaic)
+
+        # keyboard control
+        k = cv2.waitKey(33)
+        if k == 27:  # Esc key to stop
             break
-
+        elif k == 1113939:  # left arrow
+            filter_selection = (filter_selection + 1) % len(filters)
+            print("Filter_selection : {}".format(filter_selection))
+        elif k == 1113937:  # right arrow
+            filter_selection = (filter_selection - 1) % len(filters)
+            print("Filter_selection : {}".format(filter_selection))
+        #else:
+        #    print(k)
     # When everything done, release the capture
     cap.release()
     cv2.destroyAllWindows()
-
-"""
-    filters = flashlight.get_layer_responses(img)
-    filters = torch2numpy(filters)
-    filters = dict2list(filters)
-    for filter in filters:
-        mosaic = draw_2d_filters(filter)
-        mosaic = cv2.resize(mosaic, (800, 800), interpolation=cv2.INTER_CUBIC)
-        cv2.imshow("filters", mosaic)
-        cv2.waitKey()
-"""
 
