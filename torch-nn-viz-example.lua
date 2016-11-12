@@ -8,6 +8,9 @@ local Flashlight = torch.class('Flashlight')
 
 function Flashlight:__init(backend)
     self.backend = backend
+    if self.backend == "cuda" then
+        require 'cunn'
+    end
 
 end
 
@@ -142,6 +145,8 @@ function Flashlight:build_model()
     self.net = net
     if self.backend == "cpu" then
         self.net:float()
+    else
+        self.net:cuda()
     end
 
 end
@@ -160,6 +165,8 @@ function Flashlight:load_model()
     self.net = net
     if self.backend == "cpu" then
         self.net:float()
+    else
+        self.net:cuda()
     end
 end
 
@@ -169,6 +176,8 @@ function Flashlight:load_caffe_model(model, weights)
     print(self.net)
     if self.backend == "cpu" then
         self.net:float()
+    else
+        self.net:cuda()
     end
 end
 
@@ -181,9 +190,12 @@ function Flashlight:remove_batch_norm(net)
 end
 
 function Flashlight:predict(image)
+    if self.backend == "cuda" then
+        image = image:cuda()
+    end
     self.net:evaluate()
     local output = self.net:forward(image)
-    return output
+    return output:float()
 end
 
 -- Retrieve the filter responses caused by passing the image through the model
