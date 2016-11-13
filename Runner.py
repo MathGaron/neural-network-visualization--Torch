@@ -10,6 +10,8 @@ from SpatialActivationViewer import SpatialActivationViewer
 from sklearn import datasets
 
 activation_viewer = SpatialActivationViewer()
+LAYER_SCREEN_SIZE = 800
+screen_ratio = 0
 
 def torch2numpy(data):
     if isinstance(data, dict):
@@ -35,7 +37,7 @@ def prepare_image(img, newsize):
 
 def mouse_click(event,x,y,flags,param):
     if event == cv2.EVENT_LBUTTONDOWN:
-        activation_viewer.filter_selection(x, y)
+        activation_viewer.filter_selection(x * screen_ratio, y * screen_ratio)
 
 if __name__ == '__main__':
     # load lua files
@@ -80,9 +82,9 @@ if __name__ == '__main__':
         filters = torch2numpy(filters)
         filters = dict2list(filters)
         activation_viewer.update_filter_data(filters)
-        mosaic, filter_img = activation_viewer.draw(filters)
-        mosaic = cv2.resize(mosaic, (800, 800), interpolation=cv2.INTER_CUBIC)
-        cv2.imshow("filters", mosaic)
+        filter_grid, filter_img = activation_viewer.draw(filters)
+        screen_ratio = float(filter_grid.shape[0]) / float(LAYER_SCREEN_SIZE)
+        cv2.imshow("filters", cv2.resize(filter_grid, (LAYER_SCREEN_SIZE, LAYER_SCREEN_SIZE), interpolation=cv2.INTER_CUBIC))
         if filter_img is not None:
             filter_img = cv2.resize(filter_img, (300, 300), interpolation=cv2.INTER_CUBIC)
             cv2.imshow("filter_image", filter_img)
