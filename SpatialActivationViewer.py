@@ -70,9 +70,9 @@ class SpatialActivationViewer:
             mosaic_x = (i % grid_size)
             mosaic_y = (i / grid_size)
             x, y = self.grid_to_pixel(mosaic_x, mosaic_y, h, w)
-            self.filter_grid[self.layer_selected][x:x + w, y:y + h, :] = np.repeat(np.expand_dims(cv2.convertScaleAbs(individual_filter), axis=2), 3, axis=2)
+            self.filter_grid[self.layer_selected][y:y + h, x:x + w, :] = np.repeat(np.expand_dims(cv2.convertScaleAbs(individual_filter), axis=2), 3, axis=2)
             if self.filter_selected:
-                if int(mosaic_x) == self.filter_selected[1] and int(mosaic_y) == self.filter_selected[0]:
+                if int(mosaic_x) == self.filter_selected[0] and int(mosaic_y) == self.filter_selected[1]:
                     filter_img = np.repeat(np.expand_dims(cv2.convertScaleAbs(individual_filter), axis=2), 3,
                                                         axis=2).copy()
         cpy = self.filter_grid[self.layer_selected].copy()
@@ -84,3 +84,17 @@ class SpatialActivationViewer:
                           (x + w, y + h),
                           (0, 255, 0))
         return cpy, filter_img
+
+    def get_layer_mean_activation(self, filters_layer):
+        filters = filters_layer[self.layer_selected]
+        mean = 0
+        for filter in filters:
+            mean += np.mean(filter)
+        return mean/len(filters)
+
+    def get_selected_filter_mean_activation(self, filters_layer):
+        if self.filter_selected is None:
+            raise Exception("No filter selected")
+        select_x, select_y = self.filter_selected
+        index = select_y * self.mosaic_sizes[self.layer_selected] + select_x
+        return np.mean(filters_layer[self.layer_selected][:, index, :, :])

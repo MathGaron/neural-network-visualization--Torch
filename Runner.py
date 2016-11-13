@@ -85,7 +85,9 @@ if __name__ == '__main__':
         filter_grid, filter_img = activation_viewer.draw(filters)
         screen_ratio = float(filter_grid.shape[0]) / float(LAYER_SCREEN_SIZE)
         cv2.imshow("filters", cv2.resize(filter_grid, (LAYER_SCREEN_SIZE, LAYER_SCREEN_SIZE), interpolation=cv2.INTER_CUBIC))
+        print("layer mean activation : {activation_viewer.get_layer_mean_activation(filters)}".format())
         if filter_img is not None:
+            print("filter mean activation : {}".format(activation_viewer.get_selected_filter_mean_activation(filters)))
             filter_img = cv2.resize(filter_img, (300, 300), interpolation=cv2.INTER_CUBIC)
             cv2.imshow("filter_image", filter_img)
 
