@@ -1,29 +1,16 @@
-
-import PyTorchHelpers
-import cv2
-import os
-import numpy as np
 import json
+import os
+
+import cv2
+import numpy as np
 
 from SpatialActivationViewer import SpatialActivationViewer
-
-from sklearn import datasets
+from InputGenerators.CameraInputGenerator import CameraInputGenerator
+from DeepLearningBackend.TorchBackend import TorchBackend
 
 activation_viewer = SpatialActivationViewer()
 LAYER_SCREEN_SIZE = 800
 screen_ratio = 0
-
-def torch2numpy(data):
-    if isinstance(data, dict):
-        for key, value in data.items():
-            data[key] = value.asNumpyTensor()
-    return data
-
-
-def dict2list(dict):
-    index = [k for k in dict.keys()]
-    index.sort()
-    return [dict[i] for i in index]
 
 
 def prepare_image(img, newsize):
@@ -40,9 +27,8 @@ def mouse_click(event,x,y,flags,param):
         activation_viewer.filter_selection(x * screen_ratio, y * screen_ratio)
 
 if __name__ == '__main__':
-    # load lua files
-    Flashlight = PyTorchHelpers.load_lua_class("torch-nn-viz-example.lua", 'Flashlight')
-    flashlight = Flashlight("cuda")
+
+    model = TorchBackend()
 
     # load params
     path_to_config = "config/param.json"
@@ -52,13 +38,13 @@ if __name__ == '__main__':
     # Default folder names
     filterResponsesFolderName = 'filter-responses'
     imageFolderName = 'images'
-    flashlight.clear_gnu_plots()
 
     # load/build model
     #flashlight.build_model()
     model_path = settings["caffe_model_path"]
-    flashlight.load_caffe_model(os.path.join(model_path, "VGG_CNN_M_deploy.prototxt"),
-                                os.path.join(model_path, "VGG_CNN_M.caffemodel"))
+    model.load_cafe_model(os.path.join(model_path, "VGG_CNN_M_deploy.prototxt"),
+                          os.path.join(model_path, "VGG_CNN_M.caffemodel"))
+
     # Setup class name
     classes = []
     with open(settings["dataset_classe_file"]) as file:
@@ -66,21 +52,17 @@ if __name__ == '__main__':
             classes.append(line)
 
     # run webcam
-    cap = cv2.VideoCapture(0)
+    input_generator = CameraInputGenerator()
     cv2.namedWindow("filters")
     cv2.setMouseCallback("filters", mouse_click)
-    filter_selection = 0
-    while (True):
+    for frame in input_generator:
         # Capture and process image
-        ret, frame = cap.read()
         cv2.imshow("frame", frame)
         img = prepare_image(frame, 224)
         # output prediction
-        output = flashlight.predict(img).asNumpyTensor()
-        #print classes[np.argmax(output)]
-        filters = flashlight.get_convolution_activation()
-        filters = torch2numpy(filters)
-        filters = dict2list(filters)
+        output = model.predict(img)
+
+        filters = model.get_convolution_activation()
         activation_viewer.update_filter_data(filters)
         filter_grid, filter_img = activation_viewer.draw(filters)
         screen_ratio = float(filter_grid.shape[0]) / float(LAYER_SCREEN_SIZE)
@@ -99,10 +81,5 @@ if __name__ == '__main__':
             activation_viewer.layer_selection_increment(1)
         elif k == 1113937:  # right arrow
             activation_viewer.layer_selection_increment(-1)
-
-        #else:
-        #    print(k)
-    # When everything done, release the capture
-    cap.release()
     cv2.destroyAllWindows()
 
