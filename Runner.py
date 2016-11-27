@@ -2,24 +2,15 @@ import json
 import os
 
 import cv2
-import numpy as np
 
 from SpatialActivationViewer import SpatialActivationViewer
 from InputGenerators.CameraInputGenerator import CameraInputGenerator
 from DeepLearningBackend.TorchBackend import TorchBackend
+from PreProcessor.VGGPreProcessor import VGGPreProcessor
 
 activation_viewer = SpatialActivationViewer()
 LAYER_SCREEN_SIZE = 800
 screen_ratio = 0
-
-
-def prepare_image(img, newsize):
-    img = cv2.resize(img, (newsize, newsize), interpolation=cv2.INTER_CUBIC).astype(np.float32)
-    img[:, :, 0] -= 103.939
-    img[:, :, 1] -= 116.779
-    img[:, :, 2] -= 123.68
-    img = img.transpose((2, 0, 1))
-    return img.reshape(1, 3, newsize, newsize)
 
 
 def mouse_click(event,x,y,flags,param):
@@ -45,6 +36,8 @@ if __name__ == '__main__':
     model.load_cafe_model(os.path.join(model_path, "VGG_CNN_M_deploy.prototxt"),
                           os.path.join(model_path, "VGG_CNN_M.caffemodel"))
 
+    preprocessor = VGGPreProcessor(224)
+
     # Setup class name
     classes = []
     with open(settings["dataset_classe_file"]) as file:
@@ -55,12 +48,12 @@ if __name__ == '__main__':
     input_generator = CameraInputGenerator()
     cv2.namedWindow("filters")
     cv2.setMouseCallback("filters", mouse_click)
-    for frame in input_generator:
+    for input in input_generator:
         # Capture and process image
-        cv2.imshow("frame", frame)
-        img = prepare_image(frame, 224)
+        preprocessor.show_input(input)
+        input = preprocessor.preprocess_input(input)
         # output prediction
-        output = model.predict(img)
+        output = model.predict(input)
 
         filters = model.get_convolution_activation()
         activation_viewer.update_filter_data(filters)
