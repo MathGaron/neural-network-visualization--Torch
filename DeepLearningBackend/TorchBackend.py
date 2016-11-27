@@ -20,6 +20,10 @@ class TorchBackend:
         filters = TorchBackend.dict2list_(filters)
         return filters
 
+    def get_convolution_filters(self):
+        weights = self.model.get_convolution_filters()
+        print(weights)
+
     @staticmethod
     def torch2numpy_(data):
         if isinstance(data, dict):

@@ -48,12 +48,15 @@ if __name__ == '__main__':
     input_generator = CameraInputGenerator()
     cv2.namedWindow("filters")
     cv2.setMouseCallback("filters", mouse_click)
+    filters = None
     for input in input_generator:
         # Capture and process image
-        preprocessor.show_input(input)
+        VGGPreProcessor.show_input(input)
         input = preprocessor.preprocess_input(input)
         # output prediction
         output = model.predict(input)
+
+        model.get_convolution_filters()
 
         filters = model.get_convolution_activation()
         activation_viewer.update_filter_data(filters)

@@ -208,13 +208,25 @@ function Flashlight:get_convolution_activation()
     for i, curModule in ipairs(self.net.modules) do
         curModule['ADDED_NAME'] = torch.type(curModule)
         if curModule.ADDED_NAME == "nn.SpatialConvolution" then
-            local activation = curModule.output.new()
-            activation:resize(curModule.output:nElement())
-            activation:copy(curModule.output)
             table.insert(self.filterResponses, curModule.output:float())
         end
     end
     return self.filterResponses
+end
+
+function Flashlight:get_convolution_filters()
+    self.filterWeights = {}
+    for i, curModule in ipairs(self.net.modules) do
+        curModule['ADDED_NAME'] = torch.type(curModule)
+        if curModule.ADDED_NAME == "nn.SpatialConvolution" then
+            local filter = curModule.weight.new()
+            filter:resize(curModule.weight:nElement())
+            filter:copy(curModule.weight)
+            table.insert(self.filterWeights, filter:float())
+            --print(curModule.weight:size()) : first layer : 96*3*7*7, next : 256*96*5*5
+        end
+    end
+    --return self.filterWeights
 end
 
 -- Close all gnuplot windows

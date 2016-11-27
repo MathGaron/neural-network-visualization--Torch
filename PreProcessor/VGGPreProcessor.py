@@ -15,7 +15,7 @@ class VGGPreProcessor:
         return img.reshape(1, 3, self.input_size, self.input_size)
 
     @staticmethod
-    def show_input(self, input):
+    def show_input(input):
         cv2.imshow("VGG Input", input)
 
     def check_input(self, input):
