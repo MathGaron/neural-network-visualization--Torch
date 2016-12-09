@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 import cv2
 
@@ -19,8 +20,6 @@ def mouse_click(event,x,y,flags,param):
 
 if __name__ == '__main__':
 
-    model = TorchBackend("cuda")
-
     # load params
     path_to_config = "config/param.json"
     with open(path_to_config) as json_data:
@@ -31,11 +30,16 @@ if __name__ == '__main__':
     imageFolderName = 'images'
 
     # load/build model
-    #flashlight.build_model()
-    model_path = settings["caffe_model_path"]
-    model.load_cafe_model(os.path.join(model_path, "VGG_CNN_M_deploy.prototxt"),
-                          os.path.join(model_path, "VGG_CNN_M.caffemodel"))
+    if settings["deep_learning_backend"] == "torch":
+        model = TorchBackend(settings["processing_backend"])
+        model_path = settings["caffe_model_path"]
+        model.load_cafe_model(os.path.join(model_path, "VGG_CNN_M_deploy.prototxt"),
+                              os.path.join(model_path, "VGG_CNN_M.caffemodel"))
+    else:
+        print("The deep learning backend : {} is not recognized... exiting".format(settings["deep_learning_backend"]))
+        sys.exit(-1)
 
+    #Setup preprocessor
     preprocessor = VGGPreProcessor(224)
 
     # Setup class name

@@ -1,11 +1,12 @@
 import PyTorchHelpers
+from DeepLearningBackend.BackendBase import BackendBase
 
 
-class TorchBackend:
-    def __init__(self,backend="cuda"):
-        # load lua files
+class TorchBackend(BackendBase):
+    def __init__(self, processing_backend="cuda"):
+        super().__init__(processing_backend)
         Flashlight = PyTorchHelpers.load_lua_class("torch-nn-viz-example.lua", 'Flashlight')
-        self.model = Flashlight(backend)
+        self.model = Flashlight(self.processing_backend)
         self.model.clear_gnu_plots()
 
     def load_cafe_model(self, prototxt, caffemodel):

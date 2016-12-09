@@ -1,0 +1,6 @@
+{
+  "caffe_model_path": "/your/path/to/VGG_CNN_M",
+  "dataset_classe_file": "Dataset_meta/imagenet_classes.txt"
+  "processing_backend": "cuda",
+  "deep_learning_backend": "torch"
+}
