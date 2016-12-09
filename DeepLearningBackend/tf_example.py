@@ -19,7 +19,7 @@ class GraphViewerTF:
         images = tf.placeholder("float", [None, 224, 224, 3])
 
     def read_graph(self, fname=''):
-        print 'Loading graph from %s' % (fname)
+        print('Loading graph from {}'.format(fname))
         start_time = time.time()
         f = open(fname, mode='rb')
         fileContent = f.read()
@@ -34,7 +34,7 @@ class GraphViewerTF:
         graph = tf.get_default_graph()
         self.graph = graph
 
-        print "graph loaded from disk"
+        print("graph loaded from disk")
         print("Time : {}".format(time.time() - start_time))
         init = tf.initialize_all_variables()
         self.sess.run(init)
@@ -46,7 +46,7 @@ class GraphViewerTF:
         '''
             run once for every image
         '''
-        print 'prediction:'
+        print('prediction:')
         self.get_tensor_names()
         tensors = self.tensors['Relu']
         feed_dict = {self.inputs: img}
@@ -56,7 +56,7 @@ class GraphViewerTF:
         activation_viewer.update_filter_data(ot)
 
         filter_grid, filter_img = activation_viewer.draw(ot)
-        print 'predict done'
+        print('predict done')
         '''
         *
         *
@@ -112,6 +112,6 @@ if __name__ == '__main__':
     start_time = time.time()
     graphTF.forward_pass(img)
     print("Time : {}".format(time.time() - start_time))
-    print 'Close'
+    print('Close')
     sess.close()
     # with graphTF.sess:
