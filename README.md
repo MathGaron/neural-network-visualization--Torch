@@ -15,10 +15,10 @@ Download caffe's model .prototxt and .caffemodel [Here](https://gist.github.com/
 ## Dependencies
 Python3
 
-(optional) tensorflow
-(optional) torch 7
-pytorch (if using torch backend)
-opencv 3.1.0
+- (optional) tensorflow
+- (optional) torch 7
+- pytorch (if using torch backend)
+- opencv 3.1.0
 
 
 ---
