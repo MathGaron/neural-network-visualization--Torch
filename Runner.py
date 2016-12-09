@@ -19,7 +19,7 @@ def mouse_click(event,x,y,flags,param):
 
 if __name__ == '__main__':
 
-    model = TorchBackend()
+    model = TorchBackend("cuda")
 
     # load params
     path_to_config = "config/param.json"

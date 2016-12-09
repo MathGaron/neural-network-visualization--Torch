@@ -2,10 +2,10 @@ import PyTorchHelpers
 
 
 class TorchBackend:
-    def __init__(self):
+    def __init__(self,backend="cuda"):
         # load lua files
         Flashlight = PyTorchHelpers.load_lua_class("torch-nn-viz-example.lua", 'Flashlight')
-        self.model = Flashlight("cuda")
+        self.model = Flashlight(backend)
         self.model.clear_gnu_plots()
 
     def load_cafe_model(self, prototxt, caffemodel):
