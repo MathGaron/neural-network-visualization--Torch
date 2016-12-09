@@ -1,11 +1,18 @@
-A quick code tutorial through visualizing layers of neural networks.
+Please change personal configuration in a local .json in config folder.
 
-Visualization can be done for every filter of every layer.
+**Current parameters:**
+caffe_model_path : path where the caffe .prototxt and .caffemodel is. This is subject to change 
+dataset_class_file : this is the path to the file where all model classes are listed
+processing_backend : cuda or cpu
+deep_learning_backend : torch or tensorflow
 
-I've found it easy to get a high level picture of things by looking
-in each folder containing the filter responses for a specific layer.
+**For torch vgg model**
+Download caffe's model .prototxt and .caffemodel to:
+https://gist.github.com/ksimonyan/f194575702fae63b2829
 
-More documentation will be coming soon...
+**For tensorflow vgg model**
+(todo)
+
 
 
 Licensing:
