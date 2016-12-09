@@ -13,8 +13,10 @@ Download caffe's model .prototxt and .caffemodel [Here](https://gist.github.com/
 (todo)
 
 
+---
 
-Licensing:
+
+#Licensing:
 
 The MIT License (MIT)
 Copyright (c) 2016 Ethan Gaebel
