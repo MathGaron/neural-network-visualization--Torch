@@ -60,9 +60,9 @@ if __name__ == '__main__':
         # output prediction
         output = model.predict(input)
 
-        model.get_convolution_filters()
 
         filters = model.get_convolution_activation()
+        print(filters[0].shape)
         activation_viewer.update_filter_data(filters)
         filter_grid, filter_img = activation_viewer.draw(filters)
         screen_ratio = float(filter_grid.shape[0]) / float(LAYER_SCREEN_SIZE)
