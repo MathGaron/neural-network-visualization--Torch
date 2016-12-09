@@ -1,16 +1,15 @@
 Please change personal configuration in a local .json in config folder.
 
-**Current parameters:**
+###Current parameters:
 caffe_model_path : path where the caffe .prototxt and .caffemodel is. This is subject to change 
 dataset_class_file : this is the path to the file where all model classes are listed
 processing_backend : cuda or cpu
 deep_learning_backend : torch or tensorflow
 
-**For torch vgg model**
-Download caffe's model .prototxt and .caffemodel to:
-https://gist.github.com/ksimonyan/f194575702fae63b2829
+###For torch vgg model
+Download caffe's model .prototxt and .caffemodel [Here](https://gist.github.com/ksimonyan/f194575702fae63b2829)
 
-**For tensorflow vgg model**
+###For tensorflow vgg model
 (todo)
 
 
