@@ -14,6 +14,14 @@ class VGGPreProcessor:
         img = img.transpose((2, 0, 1))
         return img.reshape(1, 3, self.input_size, self.input_size)
 
+    def preprocess_inverse(self, input):
+        input = input[0, :, :, :]
+        input = input.transpose((1, 2, 0))
+        input[:, :, 0] += 103.939
+        input[:, :, 1] += 116.779
+        input[:, :, 2] += 123.68
+        return input.astype(np.uint8)
+
     @staticmethod
     def show_input(input):
         cv2.imshow("VGG Input", input)

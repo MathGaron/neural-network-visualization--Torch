@@ -194,8 +194,17 @@ function Flashlight:predict(image)
         image = image:cuda()
     end
     self.net:evaluate()
+    self.last_input = image
     local output = self.net:forward(image)
     return output:float()
+end
+
+function Flashlight:backward(forward_output)
+    -- backend transfer
+    if self.backend == "cuda" then
+        forward_output = forward_output:cuda()
+    end
+    return self.net:backward(self.last_input, forward_output):float() -- L2 distance for grad
 end
 
 -- Retrieve the filter responses caused by passing the image through the model

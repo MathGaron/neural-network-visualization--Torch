@@ -12,8 +12,11 @@ class TorchBackend(BackendBase):
     def load_cafe_model(self, prototxt, caffemodel):
         self.model.load_caffe_model(prototxt, caffemodel)
 
-    def predict(self, input):
+    def forward(self, input):
         return self.model.predict(input).asNumpyTensor()
+
+    def backward(self, forward_output):
+        return self.model.backward(forward_output).asNumpyTensor()
 
     def get_convolution_activation(self):
         filters = self.model.get_convolution_activation()

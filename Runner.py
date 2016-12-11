@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import numpy as np
 
 import cv2
 
@@ -8,6 +9,7 @@ from SpatialActivationViewer import SpatialActivationViewer
 from InputGenerators.CameraInputGenerator import CameraInputGenerator
 from DeepLearningBackend.TorchBackend import TorchBackend
 from PreProcessor.VGGPreProcessor import VGGPreProcessor
+import ImageOptimization
 
 activation_viewer = SpatialActivationViewer()
 LAYER_SCREEN_SIZE = 800
@@ -17,6 +19,15 @@ screen_ratio = 0
 def mouse_click(event,x,y,flags,param):
     if event == cv2.EVENT_LBUTTONDOWN:
         activation_viewer.filter_selection(x * screen_ratio, y * screen_ratio)
+
+
+def deep_dream_optimize(optimizer, preprocessor, image, iterations=100):
+    # we could show the filters at each iterations here...
+    for i in range(iterations):
+        image = preprocessor.preprocess_input(image)
+        optimizer.make_step(image, ImageOptimization.Optimizer.objective_maximize_class, 1, energy=0.5, index=49)
+        image = preprocessor.preprocess_inverse(image)
+    return image
 
 if __name__ == '__main__':
 
@@ -39,8 +50,15 @@ if __name__ == '__main__':
         print("The deep learning backend : {} is not recognized... exiting".format(settings["deep_learning_backend"]))
         sys.exit(-1)
 
-    #Setup preprocessor
+    #Setup preprocessor and optimizers
     preprocessor = VGGPreProcessor(224)
+    dream_optimizer = ImageOptimization.Optimizer(model)
+
+    # deep dream example:
+    random_image = dream_optimizer.generate_gaussian_image((224, 224, 3))
+    dream = deep_dream_optimize(dream_optimizer, preprocessor, random_image, iterations=100)
+    cv2.imshow("Dream", cv2.resize(dream, (224*3, 224*3), interpolation=cv2.INTER_CUBIC))
+    cv2.waitKey()
 
     # Setup class name
     classes = []
@@ -56,10 +74,9 @@ if __name__ == '__main__':
     for input in input_generator:
         # Capture and process image
         VGGPreProcessor.show_input(input)
-        input = preprocessor.preprocess_input(input)
-        # output prediction
-        output = model.predict(input)
 
+        input = preprocessor.preprocess_input(input)
+        model.forward(input)
 
         filters = model.get_convolution_activation()
         print(filters[0].shape)

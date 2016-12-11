@@ -6,11 +6,20 @@ class BackendBase:
         self.processing_backend = processing_backend
 
     @abstractmethod
-    def predict(self, input):
+    def forward(self, input):
         """
-        Compute the model's prediction. store the activation function of each layers
+        Compute the model's forward step. store the activation function of each layers
         :param input: numpy array of the input
         :return: numpy array of the output
+        """
+        pass
+
+    @abstractmethod
+    def backward(self, loss):
+        """
+
+        :param loss:
+        :return:
         """
         pass
 
