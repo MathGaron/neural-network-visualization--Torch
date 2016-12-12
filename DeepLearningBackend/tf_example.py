@@ -4,7 +4,7 @@ import tensorflow as tf
 import cv2
 from pprint import pprint
 import time
-from SpatialActivationViewer import SpatialActivationViewer
+# from SpatialActivationViewer import SpatialActivationViewer
 
 
 class GraphViewerTF:
@@ -51,12 +51,24 @@ class GraphViewerTF:
         tensors = self.tensors['Relu']
         feed_dict = {self.inputs: img}
         # todo: this is super slow!!!
+        start_time = time.time()
+        outputs = self.sess.run(tensors[0], feed_dict=feed_dict)
+        print("predict done, 1 opt. Time : %.3f" % (time.time() - start_time))
+        start_time = time.time()
         outputs = self.sess.run(tensors, feed_dict=feed_dict)
         ot = [np.reshape(outputs[0], [64, 224, 224])]
-        activation_viewer.update_filter_data(ot)
+        # activation_viewer.update_filter_data(ot)
 
-        filter_grid, filter_img = activation_viewer.draw(ot)
-        print('predict done')
+        # filter_grid, filter_img = activation_viewer.draw(ot)
+        print("predict done, %d opts. Time %.3f:" % (len(tensors), time.time() - start_time))
+        start_time = time.time()
+        outputs = self.sess.run(tensors, feed_dict=feed_dict)
+        ot = [np.reshape(outputs[0], [64, 224, 224])]
+        # activation_viewer.update_filter_data(ot)
+
+        # filter_grid, filter_img = activation_viewer.draw(ot)
+        print("Again predict done, %d opts. Time %.3f:" % (len(tensors), time.time() - start_time))
+
         '''
         *
         *
@@ -77,13 +89,13 @@ class GraphViewerTF:
         newtype='sigmoid', will also return the sigmoid tensors
         '''
         self.tensors = {'Conv2D': None, 'Relu': None}
-        self._update_tensors(tensor_type='Conv2D')
-        self._update_tensors(tensor_type='Relu')
+        self._get_tensor_name(tensor_type='Conv2D')
+        self._get_tensor_name(tensor_type='Relu')
         if newtype != '':
             self.update_tensors(tensor_type=newtype)
         return self.tensors
 
-    def _update_tensors(self, tensor_type='Conv2D'):
+    def _get_tensor_name(self, tensor_type='Conv2D'):
         '''
         Add tensor to self.tensors
         '''
@@ -91,6 +103,21 @@ class GraphViewerTF:
         layers = [op.name for op in graph.get_operations() if op.type == tensor_type and 'import/' in op.name]
         tensors = [graph.get_tensor_by_name(name + ':0') for name in layers]
         self.tensors.update({tensor_type: tensors})
+
+    def update_tensors(self, loss, opts=[], gradients=None, optimizer=None):
+        all_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+        # todo, type as list
+        for _var in all_vars:
+            if _var not in opts:
+                '''
+                Some comments to understand TF
+                When building ops to compute gradients,
+                this op prevents the contribution of its inputs to be taken into account. '''
+                tf.stop_gradient(_var)  # then the gradient only works on the input opts
+        if optimizer is None:
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
+        gradients = optimizer.compute_gradients(loss)
+        optimizer.apply_gradients(gradients)
 
     def get_convolution_activation(self, tensor_name):
         '''
@@ -101,17 +128,26 @@ class GraphViewerTF:
         pass
 
 if __name__ == '__main__':
-    activation_viewer = SpatialActivationViewer()
-    # with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:  # todo, keep sess alive
-    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
-    graphTF = GraphViewerTF(sess)
+    '''
+    Test this code with VGG16
+    vgg pre-trained model can be found here:
+    https://github.com/ry/tensorflow-vgg16
+    '''
+    # activation_viewer = SpatialActivationViewer()
     fname = "/home-local/jizha16.extra.nobkp/data/deeplearning/vgg16.tfmodel"
-    graphTF.read_graph(fname)
-    img = imresize(imread('images/lena.png'), [224, 224]) / 255.0
-    img = img.reshape((1, 224, 224, 3))
-    start_time = time.time()
-    graphTF.forward_pass(img)
-    print("Time : {}".format(time.time() - start_time))
-    print('Close')
-    sess.close()
-    # with graphTF.sess:
+    with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+        graphTF = GraphViewerTF(sess)
+        graphTF.read_graph(fname)
+        # feed an image to the Graph, get the responses for some ops
+        img = imresize(imread('../images/lena.png'), [224, 224]) / 255.0
+        img = img.reshape((1, 224, 224, 3))
+        start_time = time.time()
+        graphTF.forward_pass(img)
+        '''
+        notice the fist sess.run() will be super slow, since TF will build the graph and some sub-graphs.
+        Then the graph will be cached, the subsequent computations will be fast.
+        '''
+        # TODO cut the a sub-graph out from the whole.
+        print("Time : {}".format(time.time() - start_time))
+        print 'Close'
+        # with graphTF.sess:
