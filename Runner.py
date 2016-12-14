@@ -21,13 +21,26 @@ def mouse_click(event,x,y,flags,param):
         activation_viewer.filter_selection(x * screen_ratio, y * screen_ratio)
 
 
+#Exemple code to run deep dream activation
 def deep_dream_optimize(optimizer, preprocessor, image, iterations=100):
     # we could show the filters at each iterations here...
     for i in range(iterations):
         image = preprocessor.preprocess_input(image)
         optimizer.make_step(image, ImageOptimization.Optimizer.objective_maximize_class, 1, energy=0.5, index=49)
         image = preprocessor.preprocess_inverse(image)
+        cv2.imshow("wow", image)
+        cv2.waitKey(30)
     return image
+
+
+def backprop_layer(image, model):
+    image = preprocessor.preprocess_input(image)
+    out = model.forward(image)
+    grads = model.backward_layer(2)
+    image = preprocessor.preprocess_inverse(image)
+    print(image.shape)
+    cv2.imshow("test", image)
+    cv2.waitKey()
 
 if __name__ == '__main__':
 
@@ -60,6 +73,12 @@ if __name__ == '__main__':
     cv2.imshow("Dream", cv2.resize(dream, (224*3, 224*3), interpolation=cv2.INTER_CUBIC))
     cv2.waitKey()
 
+    #random_image = dream_optimizer.generate_gaussian_image((224, 224, 3))
+    #backprop_layer(random_image, model)
+
+    import sys
+    sys.exit()
+
     # Setup class name
     classes = []
     with open(settings["dataset_classe_file"]) as file:
@@ -77,9 +96,8 @@ if __name__ == '__main__':
 
         input = preprocessor.preprocess_input(input)
         model.forward(input)
-
         filters = model.get_convolution_activation()
-        print(filters[0].shape)
+
         activation_viewer.update_filter_data(filters)
         filter_grid, filter_img = activation_viewer.draw(filters)
         screen_ratio = float(filter_grid.shape[0]) / float(LAYER_SCREEN_SIZE)

@@ -11,6 +11,9 @@ class Optimizer:
         prediction = self.model.forward(image)
         prediction_grad = objective_func(prediction, **objective_params)
         image_grad = self.model.backward(prediction_grad)
+        # for layer specific activation function
+        #index = 4
+        #image_grad = self.model.backward_layer(self.model.get_convolution_activation()[index], index)
         #optimize
         image += float(step_size) / np.abs(image_grad).mean() * image_grad
         #regularize

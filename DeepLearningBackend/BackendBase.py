@@ -15,10 +15,20 @@ class BackendBase:
         pass
 
     @abstractmethod
-    def backward(self, loss):
+    def backward(self, grad):
         """
+        Do a backward pass with grad as input gradient, returns output gradients
+        :param grad:
+        :return:
+        """
+        pass
 
-        :param loss:
+    @abstractmethod
+    def backward_layer(self, grad, index):
+        """
+        Do a backward pass from (index) convolution layer, pass input gradient returns output gradients
+        :param grad:
+        :param index:
         :return:
         """
         pass

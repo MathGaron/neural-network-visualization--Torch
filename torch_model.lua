@@ -207,6 +207,32 @@ function Flashlight:backward(forward_output)
     return self.net:backward(self.last_input, forward_output):float() -- L2 distance for grad
 end
 
+function Flashlight:truncate_network(net, index)
+    local delete = false
+    for i, curModule in ipairs(self.net.modules) do
+        if delete then
+            net:remove()
+        end
+        if curModule['LAYER_INDEX'] == index then
+            delete = true
+        end
+    end
+end
+
+function Flashlight:backward_layer(activation_output, index)
+    if self.truncated_net == nil or self.truncated_index ~= index then
+        self.truncated_net = self.net:clone('weight','bias');
+        self.truncated_index = index
+        self:truncate_network(self.truncated_net, index)
+    end
+    if self.backend == "cuda" then
+        activation_output = activation_output:cuda()
+    end
+
+    local grad = self.truncated_net:backward(self.last_input, activation_output)
+    return grad:float()
+end
+
 -- Retrieve the filter responses caused by passing the image through the model
 -- Each table of filter responses from a layer has a field 'ADDED_NAME' 
 -- added to it which contains the name of the layer type. This is to make
@@ -214,9 +240,11 @@ end
 -- Return the filter responses in a table 
 function Flashlight:get_convolution_activation()
     self.filterResponses = {}
+    count = 0
     for i, curModule in ipairs(self.net.modules) do
-        curModule['ADDED_NAME'] = torch.type(curModule)
-        if curModule.ADDED_NAME == "nn.SpatialConvolution" then
+        if torch.type(curModule) == "nn.SpatialConvolution" then
+            curModule['LAYER_INDEX'] = count
+            count = count + 1
             table.insert(self.filterResponses, curModule.output:float())
         end
     end
