@@ -14,87 +14,6 @@ function Flashlight:__init(backend)
 
 end
 
--- Very Simple test for gnuplot
-function Flashlight:gnuplot_test()
-    a = image.lena();
-    gnuplot.figure(1);
-    gnuplot.imagesc(a[1])
-end
-
--------------------------------------------------------------------------------
------------------------TEST NETWORK DEFINITION---------------------------------
--------------------------------------------------------------------------------
--- Constructs and returns an inceptionModule from the paper 
--- "Going Deeper with Convolutional Networks", with input/output channels defined
--- with the parameters as follows:
--- inputChannels: the number of input channels
--- outputChannels: the expected number of outputChannels 
---                  (this parameter is only used to check the other parameters)
--- reductions: a 4-element array which specifies the number of channels output
---                  from each 1x1 convolutional network 
---                  (which should be smaller than the inputChannels usually...)
--- expansions: a 2-element array which specifies the number of channels output
---                  from the 3x3 convolutional layer and 
---                  the 5x5 convolutional layer
--- ReLU activations are applied after each convolutional layer
--- This module might be extended to allow for arbitrary width
-function Flashlight:inception_module(inputChannels, outputChannels, reductions, expansions)
-
-    computedOutputChannels = reductions[1] + expansions[1] + expansions[2] + reductions[4]
-    if not (outputChannels == computedOutputChannels) then
-        print("\n\nOUTPUT CHANNELS DO NOT MATCH COMPUTED OUTPUT CHANNELS")
-        print('outputChannels: ', outputChannels)
-        print('computedOutputChannels: ', computedOutputChannels)
-        print("\n\n")
-        return nil
-    end
-
-    -- Remember, if there is no stacked first dimension (which here is just a
-    -- single entry in the first dimension) then this should be 1.
-    -- But since I reshape and add the empty first dimension, 
-    -- I can keep this as 2.
-    local inception = nn.DepthConcat(2)
-
-    local column1 = nn.Sequential()
-    column1:add(nn.SpatialConvolution(inputChannels, reductions[1],
-        1, 1,  -- Convolution kernel
-        1, 1)) -- Stride
-    column1:add(nn.ReLU(true))
-    inception:add(column1)
-    
-    local column2 = nn.Sequential()
-    column2:add(nn.SpatialConvolution(inputChannels, reductions[2],
-        1, 1, 
-        1, 1))
-    column2:add(nn.ReLU(true))
-    column2:add(nn.SpatialConvolution(reductions[2], expansions[1],
-        3, 3,  -- Convolution kernel
-        1, 1)) -- Stride
-    column2:add(nn.ReLU(true))
-    inception:add(column2)
-
-    local column3 = nn.Sequential()
-    column3:add(nn.SpatialConvolution(inputChannels, reductions[3],
-        1, 1, 
-        1, 1))
-    column3:add(nn.ReLU(true))
-    column3:add(nn.SpatialConvolution(reductions[3], expansions[2],
-        5, 5,  -- Convolution kernel
-        1, 1)) -- Stride
-    column3:add(nn.ReLU(true))
-    inception:add(column3)
-
-    local column4 = nn.Sequential()
-    column4:add(nn.SpatialMaxPooling(3, 3, 1, 1))
-    column4:add(nn.SpatialConvolution(inputChannels, reductions[4],
-        1, 1,  -- Convolution kernel
-        1, 1)) -- Stride
-    column4:add(nn.ReLU(true))
-    inception:add(column4)
-
-    return inception
-end
-
 function Flashlight:build_model()
 
     local net = nn.Sequential()
@@ -142,13 +61,15 @@ function Flashlight:build_model()
     net:add(nn.Dropout(0.4))
     net:add(nn.Linear(256, 10))
     --print(net)
-    self.net = net
-    if self.backend == "cpu" then
-        self.net:float()
-    else
-        self.net:cuda()
-    end
+    self.net = self:set_backend(net)
+end
 
+function Flashlight:set_backend(module)
+    if self.backend == "cuda" then
+        return module:cuda()
+    else
+        return module:float()
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -162,23 +83,14 @@ function Flashlight:load_model()
     local net = torch.load('model-nets/model--float.net')
     self:remove_batch_norm(net)
     print(net)
-    self.net = net
-    if self.backend == "cpu" then
-        self.net:float()
-    else
-        self.net:cuda()
-    end
+    self.net = self:set_backend(net)
 end
 
 function Flashlight:load_caffe_model(model, weights)
     self.net = loadcaffe.load(model, weights)
     self:remove_batch_norm(self.net)
     print(self.net)
-    if self.backend == "cpu" then
-        self.net:float()
-    else
-        self.net:cuda()
-    end
+    self.net = self:set_backend(self.net)
 end
 
 function Flashlight:remove_batch_norm(net)
@@ -190,9 +102,7 @@ function Flashlight:remove_batch_norm(net)
 end
 
 function Flashlight:predict(image)
-    if self.backend == "cuda" then
-        image = image:cuda()
-    end
+    image = self:set_backend(image)
     self.net:evaluate()
     self.last_input = image
     local output = self.net:forward(image)
@@ -201,9 +111,7 @@ end
 
 function Flashlight:backward(forward_output)
     -- backend transfer
-    if self.backend == "cuda" then
-        forward_output = forward_output:cuda()
-    end
+    forward_output = self:set_backend(forward_output)
     return self.net:backward(self.last_input, forward_output):float() -- L2 distance for grad
 end
 
@@ -225,10 +133,7 @@ function Flashlight:backward_layer(activation_output, index)
         self.truncated_index = index
         self:truncate_network(self.truncated_net, index)
     end
-    if self.backend == "cuda" then
-        activation_output = activation_output:cuda()
-    end
-
+    activation_output = self:set_backend(activation_output)
     local grad = self.truncated_net:backward(self.last_input, activation_output)
     return grad:float()
 end
