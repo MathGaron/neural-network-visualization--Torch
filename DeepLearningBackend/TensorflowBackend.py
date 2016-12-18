@@ -4,13 +4,15 @@ import os
 
 # test function
 from scipy.misc import imread, imresize
-from pprint import pprint
 import numpy as np
 
 
 class TensorflowBackend(BackendBase):
 
     def __init__(self, sess=None):
+        tf.reset_default_graph()
+        if sess is None:
+            sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
         self.sess = sess
         self.model = None
 
@@ -25,13 +27,14 @@ class TensorflowBackend(BackendBase):
         # set an optimizer if use backward()
         self.optimizer = None
 
-    def forward(self, input):
+    def forward(self, input_ims):
         # need to find out the output tensors and input tensors
         '''
         notice the fist sess.run() will be super slow, since TF will build the graph and some sub-graphs.
         Then the graph will be cached, the subsequent computations will be fast.
         '''
-        pred = self.sess.run(self.output, {self.input: input})
+        self.input_ims = input_ims
+        pred = self.sess.run(self.output, {self.input: input_ims})
         return pred
 
     def backward(self, loss, variables=[]):
@@ -60,16 +63,19 @@ class TensorflowBackend(BackendBase):
         self.optimizer.apply_gradients(gradients)
         return self
 
-    def get_convolution_activation(self, input):
+    def get_convolution_activation(self):
+        # run a forward pass to init the inputs
+        print('get_convolution_activation')
         conv_tensors = self.get_ops_by_type('Conv2D')
-        activations = self.sess.run(conv_tensors, {self.input: input})
+        activations = self.sess.run(conv_tensors, {self.input: self.input_ims})
+        # return list of activations in shape [N, H, W, C]
         return activations
 
     def get_convolution_filters(self):
         all_vars = tf.trainable_variables()
         weights = {}
         for var in all_vars:
-            weights.update({var.name: var.eval()})
+            weights.update({var.name: var.eval(session=self.sess)})
             print var.name
         return weights
 
@@ -89,6 +95,7 @@ class TensorflowBackend(BackendBase):
         return ops
 
     def get_ops_by_type(self, op_type='Conv2D'):
+        print('Get Operations: {}'.format(op_type))
         graph = self.graph
         op_names = [op.name for op in graph.get_operations() if op.type == op_type]
         ops = [graph.get_tensor_by_name(op_name + ':0') for op_name in op_names]
@@ -101,8 +108,6 @@ if __name__ == '__main__':
     '''
     tfmodel = '/home-local/jizha16.extra.nobkp/data/ml/vgg16-tfmodel.meta'
     img = np.reshape(imresize(imread('../images/lena.png'), [224, 224]) / 255.0, [1, 224, 224, 3])
-    images = tf.placeholder(tf.float32, [1, 224, 224, 3])
-    tf.reset_default_graph()
     with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
         modelTF = TensorflowBackend(sess)
         modelTF.load_tf_model(tfmodel)
