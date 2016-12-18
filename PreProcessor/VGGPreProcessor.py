@@ -8,23 +8,32 @@ class VGGPreProcessor:
 
     def preprocess_input(self, input):
         img = cv2.resize(input, (self.input_size, self.input_size), interpolation=cv2.INTER_CUBIC).astype(np.float32)
-        img[:, :, 0] -= 103.939
-        img[:, :, 1] -= 116.779
-        img[:, :, 2] -= 123.68
+        b, g, r = VGGPreProcessor.getMeans()
+        img[:, :, 2] -= b
+        img[:, :, 1] -= g
+        img[:, :, 0] -= r
         img = img.transpose((2, 0, 1))
-        return img.reshape(1, 3, self.input_size, self.input_size)
+        return img[np.newaxis, :, :, :]
 
     def preprocess_inverse(self, input):
         input = input[0, :, :, :]
         input = input.transpose((1, 2, 0))
-        input[:, :, 0] += 103.939
-        input[:, :, 1] += 116.779
-        input[:, :, 2] += 123.68
-        return input.astype(np.uint8)
+        b, g, r = VGGPreProcessor.getMeans()
+        input[:, :, 2] += b
+        input[:, :, 1] += g
+        input[:, :, 0] += r
+        return input
 
     @staticmethod
     def show_input(input):
         cv2.imshow("VGG Input", input)
+
+    @staticmethod
+    def getMeans():
+        blue = 103.939
+        green = 116.779
+        red = 123.68
+        return blue, green, red
 
     def check_input(self, input):
         """

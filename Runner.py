@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import numpy as np
+import scipy.ndimage as nd
 
 import cv2
 
@@ -22,15 +23,30 @@ def mouse_click(event,x,y,flags,param):
 
 
 #Exemple code to run deep dream activation
-def deep_dream_optimize(optimizer, preprocessor, image, iterations=100):
+def deep_dream_optimize(optimizer, preprocessor, image, iterations=10):
     # we could show the filters at each iterations here...
-    for i in range(iterations):
-        image = preprocessor.preprocess_input(image)
-        optimizer.make_step(image, ImageOptimization.Optimizer.objective_maximize_class, 1, energy=0.5, index=49)
-        image = preprocessor.preprocess_inverse(image)
-        cv2.imshow("wow", image)
-        cv2.waitKey(30)
-    return image
+    octave_n = 2
+    octave_scale = 1.5
+    octaves = [image.astype(np.float32)]
+    for i in range(octave_n - 1):
+        octaves.append(nd.zoom(octaves[-1], (1.0 / octave_scale, 1.0 / octave_scale, 1), order=1).astype(np.float32))
+    detail = np.zeros_like(octaves[-1])  # allocate image for network-produced details
+    for j, octave_base in enumerate(octaves[::-1]):
+        h, w = octave_base.shape[:2]
+        if j > 0:
+            # upscale details from the previous octave
+            h1, w1 = detail.shape[:2]
+            detail = nd.zoom(detail, (1.0 * h / h1, 1.0 * w / w1, 1), order=1)
+        image = octave_base + detail
+        for i in range(iterations):
+            image = preprocessor.preprocess_input(image)
+            image = optimizer.make_step(image, ImageOptimization.Optimizer.objective_maximize_class, i, 1.5, energy=0.1, index=130)     #76:tarantula   #130:flamingo  #113:snail #340:zebra
+            image = preprocessor.preprocess_inverse(image)
+            cv2.imshow("DEBUG", image.astype(np.uint8))
+            cv2.waitKey(20)
+        image = cv2.resize(image, octave_base.shape[:2], interpolation=cv2.INTER_CUBIC)
+        detail = image - octave_base
+    return image.astype(np.uint8)
 
 
 def backprop_layer(image, model):
@@ -38,7 +54,6 @@ def backprop_layer(image, model):
     out = model.forward(image)
     grads = model.backward_layer(2)
     image = preprocessor.preprocess_inverse(image)
-    print(image.shape)
     cv2.imshow("test", image)
     cv2.waitKey()
 
@@ -68,7 +83,8 @@ if __name__ == '__main__':
     dream_optimizer = ImageOptimization.Optimizer(model)
 
     # deep dream example:
-    random_image = dream_optimizer.generate_gaussian_image((224, 224, 3))
+    b, g, r = VGGPreProcessor.getMeans()
+    random_image = dream_optimizer.generate_gaussian_image((224, 224, 3), r, g, b)
     dream = deep_dream_optimize(dream_optimizer, preprocessor, random_image, iterations=100)
     cv2.imshow("Dream", cv2.resize(dream, (224*3, 224*3), interpolation=cv2.INTER_CUBIC))
     cv2.waitKey()
@@ -76,7 +92,6 @@ if __name__ == '__main__':
     #random_image = dream_optimizer.generate_gaussian_image((224, 224, 3))
     #backprop_layer(random_image, model)
 
-    import sys
     sys.exit()
 
     # Setup class name
@@ -91,6 +106,11 @@ if __name__ == '__main__':
     cv2.setMouseCallback("filters", mouse_click)
     filters = None
     for input in input_generator:
+
+        #dream = deep_dream_optimize(dream_optimizer, preprocessor, input, iterations=10)
+        #cv2.imshow("Dream", cv2.resize(dream, (224 * 3, 224 * 3), interpolation=cv2.INTER_CUBIC))
+        #cv2.waitKey()
+
         # Capture and process image
         VGGPreProcessor.show_input(input)
 
