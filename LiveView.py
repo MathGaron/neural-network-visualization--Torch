@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
             processed_input = preprocessor.preprocess_input(input)
             model.forward(processed_input)
-            filters = model.get_convolution_activation()
+            filters, _ = model.get_activation()
 
             activation_viewer.update_filter_data(filters)
             filter_grid, filter_img = activation_viewer.draw(filters)
@@ -93,12 +93,12 @@ if __name__ == '__main__':
             print(k)
             if k == 1048603:  # Esc key to stop
                 sys.exit(0)
-            if k == 1048608: #space
+            if k == ord(" "):
                 break
-            elif k == 1113939:  # left arrow
+            elif k == 65363:  # left arrow
                 activation_viewer.layer_selection_increment(1)
                 print("layer selected : {}".format(activation_viewer.layer_selected))
-            elif k == 1113937:  # right arrow
+            elif k == 65361:  # right arrow
                 activation_viewer.layer_selection_increment(-1)
                 print("layer selected : {}".format(activation_viewer.layer_selected))
         fps = time.time()

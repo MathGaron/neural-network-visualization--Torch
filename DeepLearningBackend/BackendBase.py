@@ -43,7 +43,7 @@ class BackendBase:
         pass
 
     @abstractmethod
-    def get_convolution_activation(self):
+    def get_activation(self):
         """
         This function return the models activations after a forward pass of the convolution layers
         Returns a list of numpy array : [layer1, layer2, layer3 ... layern]

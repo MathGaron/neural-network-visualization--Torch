@@ -28,11 +28,18 @@ class TorchBackend(BackendBase):
         grads = self.model.backward_layer(grad, index).asNumpyTensor()
         return grads
 
-    def get_convolution_activation(self):
-        filters = self.model.get_convolution_activation()
+    def get_activation(self):
+        filters = self.model.get_activation()
         filters = TorchBackend.torch2numpy_(filters)
         filters = TorchBackend.dict2list_(filters)
-        return filters
+        convos = []
+        linear = []
+        for filter in filters:
+            if len(filter.shape) > 2:
+                convos.append(filter)
+            else:
+                linear.append(filter)
+        return convos, linear
 
     def get_convolution_filters(self):
         weights = self.model.get_convolution_filters()

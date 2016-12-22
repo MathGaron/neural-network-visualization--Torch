@@ -150,11 +150,11 @@ end
 -- added to it which contains the name of the layer type. This is to make
 -- reviewing filter responses and mapping them back to layers easier...
 -- Return the filter responses in a table 
-function Flashlight:get_convolution_activation()
+function Flashlight:get_activation()
     self.filterResponses = {}
     count = 0
     for i, curModule in ipairs(self.net.modules) do
-        if torch.type(curModule) == "nn.SpatialConvolution" then
+        if torch.type(curModule) == "nn.ReLU" then
             curModule['LAYER_INDEX'] = count
             count = count + 1
             table.insert(self.filterResponses, curModule.output:float())
