@@ -16,13 +16,14 @@ class VGGPreProcessor:
         return img[np.newaxis, :, :, :]
 
     def preprocess_inverse(self, input):
-        input = input[0, :, :, :]
-        input = input.transpose((1, 2, 0))
+        ret = input.copy()
+        ret = ret[0, :, :, :]
+        ret = ret.transpose((1, 2, 0))
         b, g, r = VGGPreProcessor.getMeans()
-        input[:, :, 2] += b
-        input[:, :, 1] += g
-        input[:, :, 0] += r
-        return input
+        ret[:, :, 2] += b
+        ret[:, :, 1] += g
+        ret[:, :, 0] += r
+        return ret
 
     @staticmethod
     def show_input(input):
