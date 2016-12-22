@@ -1,5 +1,5 @@
 import tensorflow as tf
-from DeepLearningBackend.BackendBase import BackendBase
+from  BackendBase import BackendBase
 import os
 
 # test function
@@ -75,8 +75,8 @@ class TensorflowBackend(BackendBase):
         convos = self.sess.run(conv_tensors, {self.input: self.input_ims})
         linear = self.sess.run(relu_tensors, {self.input: self.input_ims})
         # return list of activations in shape [N, H, W, C]
-        convos = tf.transpose(convos, perm=[0, 3, 2, 1])
-        linear = tf.transpose(linear, perm=[0, 3, 2, 1])
+        convos = [np.transpose(i, [0, 3, 2, 1]) for i in convos]
+        linear = [np.transpose(i, [0, 3, 2, 1]) for i in linear]
         # return list as in the BackendBase,  (N, nfilters, outputsize_w, outputsize_h)
         return convos, linear
 
