@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # load/build model
     if settings["deep_learning_backend"] == "torch":
         model = TorchBackend(settings["processing_backend"])
-        model_path = settings["caffe_model_path"]
+        model_path = settings["model_path"]
         model.load_cafe_model(os.path.join(model_path, "VGG_CNN_F_deploy.prototxt"),
                               os.path.join(model_path, "VGG_CNN_F.caffemodel"))
     else:
@@ -60,20 +60,20 @@ if __name__ == '__main__':
             classes.append(line)
 
     # run webcam or dataset
-    input_generator = CameraInputGenerator()
-    input_generator = Caltech101Dataset('/home/mathieu/Dataset/101_ObjectCategories', 'beaver')
+    #input_generator = CameraInputGenerator()
+    input_generator = Caltech101Dataset(settings["data_path"], 'pizza')
 
     cv2.namedWindow("filters")
     cv2.setMouseCallback("filters", mouse_click)
     filters = None
     fps = time.time()
     for input in input_generator:
-        while fps - time.time() >= 1000:
+        while time.time() - fps <= float(settings["fps"]):
             # Capture and process image
             VGGPreProcessor.show_input(input)
 
-            input = preprocessor.preprocess_input(input)
-            model.forward(input)
+            processed_input = preprocessor.preprocess_input(input)
+            model.forward(processed_input)
             filters = model.get_convolution_activation()
 
             activation_viewer.update_filter_data(filters)
@@ -90,7 +90,10 @@ if __name__ == '__main__':
 
             # keyboard control
             k = cv2.waitKey(30)
-            if k == 1113927:  # Esc key to stop
+            print(k)
+            if k == 1048603:  # Esc key to stop
+                sys.exit(0)
+            if k == 1048608: #space
                 break
             elif k == 1113939:  # left arrow
                 activation_viewer.layer_selection_increment(1)
@@ -98,5 +101,5 @@ if __name__ == '__main__':
             elif k == 1113937:  # right arrow
                 activation_viewer.layer_selection_increment(-1)
                 print("layer selected : {}".format(activation_viewer.layer_selected))
-            fps = time.time()
+        fps = time.time()
     cv2.destroyAllWindows()
