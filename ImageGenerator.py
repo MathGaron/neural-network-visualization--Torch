@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # load/build model
     if settings["deep_learning_backend"] == "torch":
         model = TorchBackend(settings["processing_backend"])
-        model_path = settings["caffe_model_path"]
+        model_path = settings["model_path"]
         model.load_cafe_model(os.path.join(model_path, "VGG_CNN_F_deploy.prototxt"),
                               os.path.join(model_path, "VGG_CNN_F.caffemodel"))
     else:
@@ -67,13 +67,14 @@ if __name__ == '__main__':
     # deep dream example:
     b, g, r = VGGPreProcessor.getMeans()
     random_image = dream_optimizer.generate_gaussian_image((224, 224, 3), r, g, b)
-    # 76:tarantula   #130:flamingo  #113:snail #340:zebra #323:monarch 327:seastar  980:volcano
     dream = deep_dream_optimize(dream_optimizer, preprocessor, random_image,
-                                iterations=100,
+                                iterations=70,
                                 octave_n=4,
                                 octave_scale=1.7,
-                                imagenet_index=76,
+                                imagenet_index=583,    # 76:tarantula   #130:flamingo  #113:snail #340:zebra #323:monarch 327:seastar  980:volcano
                                 gradient_energy=0.1,
                                 debug_view=True)
-    cv2.imshow("Dream", cv2.resize(dream, (224 * 3, 224 * 3), interpolation=cv2.INTER_CUBIC))
+    stretch = cv2.resize(dream, (224 * 3, 224 * 3), interpolation=cv2.INTER_CUBIC)
+    cv2.imshow("Dream", stretch)
+    cv2.imwrite("output.png", stretch)
     cv2.waitKey()
