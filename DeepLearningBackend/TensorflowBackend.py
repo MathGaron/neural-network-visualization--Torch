@@ -1,5 +1,5 @@
 import tensorflow as tf
-from DeepLearningBackend.BackendBase import BackendBase
+from  BackendBase import BackendBase
 import os
 
 # test function
@@ -66,18 +66,19 @@ class TensorflowBackend(BackendBase):
         self.optimizer.apply_gradients(gradients)
         return self
 
-    def get_convolution_activation(self):
+    def get_activation(self):
         # run a forward pass to init the inputs
-        print('get_convolution_activation')
-        conv_tensors, conv_names = self.get_ops_by_type('Conv2D')
-        # conv_tensors, conv_names = [], [] # only use Relu?
+        print('get_activation')
         conv_tensors, conv_names = self.get_ops_by_type('Conv2D')
         relu_tensors, relu_names = self.get_ops_by_type('Relu')
-        tensors = conv_tensors + relu_tensors
-        names = conv_names + relu_names
-        activations = self.sess.run(tensors, {self.input: self.input_ims})
+
+        convos = self.sess.run(conv_tensors, {self.input: self.input_ims})
+        linear = self.sess.run(relu_tensors, {self.input: self.input_ims})
         # return list of activations in shape [N, H, W, C]
-        return activations
+        convos = [np.transpose(i, [0, 3, 2, 1]) for i in convos]
+        linear = [np.transpose(i, [0, 3, 2, 1]) for i in linear]
+        # return list as in the BackendBase,  (N, nfilters, outputsize_w, outputsize_h)
+        return convos, linear
 
     def get_convolution_filters(self):
         all_vars = tf.trainable_variables()
