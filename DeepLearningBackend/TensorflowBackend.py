@@ -66,8 +66,13 @@ class TensorflowBackend(BackendBase):
     def get_convolution_activation(self):
         # run a forward pass to init the inputs
         print('get_convolution_activation')
-        conv_tensors = self.get_ops_by_type('Conv2D')
-        activations = self.sess.run(conv_tensors, {self.input: self.input_ims})
+        conv_tensors, conv_names = self.get_ops_by_type('Conv2D')
+        # conv_tensors, conv_names = [], [] # only use Relu?
+        conv_tensors, conv_names = self.get_ops_by_type('Conv2D')
+        relu_tensors, relu_names = self.get_ops_by_type('Relu')
+        tensors = conv_tensors + relu_tensors
+        names = conv_names + relu_names
+        activations = self.sess.run(tensors, {self.input: self.input_ims})
         # return list of activations in shape [N, H, W, C]
         return activations
 
@@ -99,7 +104,7 @@ class TensorflowBackend(BackendBase):
         graph = self.graph
         op_names = [op.name for op in graph.get_operations() if op.type == op_type]
         ops = [graph.get_tensor_by_name(op_name + ':0') for op_name in op_names]
-        return ops
+        return ops, op_names
 
 
 if __name__ == '__main__':

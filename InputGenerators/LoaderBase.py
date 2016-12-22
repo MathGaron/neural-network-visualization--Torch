@@ -53,7 +53,7 @@ class DataCaltech101Example(DataLoader):
         self.classes = list(set(self.labels))
         print(self.classes)
 
-    def setClass(self, batch_size=100, label=''):
+    def setClass(self, label='pizza', batch_size=100):
         indices = [i for i, s in enumerate(self.labels) if label in s]
         labels = [self.labels[i] for i in indices]
         file_list = [self.file_list[i] for i in indices]
