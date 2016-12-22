@@ -10,11 +10,9 @@ from PreProcessor.VGGPreProcessor import VGGPreProcessor
 import ImageOptimization
 
 
-# Exemple code to run deep dream activation
-def deep_dream_optimize(optimizer, preprocessor, image, iterations=10):
+# Octave idea inspired from : https://github.com/google/deepdream/blob/master/dream.ipynb
+def deep_dream_optimize(optimizer, preprocessor, image, iterations=10, octave_n=2, octave_scale=1.3, imagenet_index=130, gradient_energy=0.1, debug_view=False):
     # we could show the filters at each iterations here...
-    octave_n = 4
-    octave_scale = 1.7
     octaves = [image.astype(np.float32)]
     for i in range(octave_n - 1):
         octaves.append(nd.zoom(octaves[-1], (1.0 / octave_scale, 1.0 / octave_scale, 1), order=1).astype(np.float32))
@@ -30,10 +28,11 @@ def deep_dream_optimize(optimizer, preprocessor, image, iterations=10):
         image = octave_base + detail
         image = preprocessor.preprocess_input(image)
         for i in range(iterations):
-            image = optimizer.make_step(image, ImageOptimization.Optimizer.objective_maximize_class, i, 1.7, energy=0.1,
-                                        index=63)  # 76:tarantula   #130:flamingo  #113:snail #340:zebra #323:monarch 327:seastar  980:volcano
-            cv2.imshow("test", preprocessor.preprocess_inverse(image).astype(np.uint8))
-            cv2.waitKey(20)
+            image = optimizer.make_step(image, ImageOptimization.Optimizer.objective_maximize_class, energy=gradient_energy,
+                                        index=imagenet_index)
+            if debug_view:
+                cv2.imshow("test", preprocessor.preprocess_inverse(image).astype(np.uint8))
+                cv2.waitKey(20)
         image = preprocessor.preprocess_inverse(image)
         image = cv2.resize(image, (w, h), interpolation=cv2.INTER_CUBIC)
         detail = image - octave_base
@@ -68,6 +67,13 @@ if __name__ == '__main__':
     # deep dream example:
     b, g, r = VGGPreProcessor.getMeans()
     random_image = dream_optimizer.generate_gaussian_image((224, 224, 3), r, g, b)
-    dream = deep_dream_optimize(dream_optimizer, preprocessor, random_image, iterations=100)
+    # 76:tarantula   #130:flamingo  #113:snail #340:zebra #323:monarch 327:seastar  980:volcano
+    dream = deep_dream_optimize(dream_optimizer, preprocessor, random_image,
+                                iterations=100,
+                                octave_n=4,
+                                octave_scale=1.7,
+                                imagenet_index=76,
+                                gradient_energy=0.1,
+                                debug_view=True)
     cv2.imshow("Dream", cv2.resize(dream, (224 * 3, 224 * 3), interpolation=cv2.INTER_CUBIC))
     cv2.waitKey()

@@ -97,4 +97,4 @@ class SpatialActivationViewer:
             raise Exception("No filter selected")
         select_x, select_y = self.filter_selected
         index = select_y * self.mosaic_sizes[self.layer_selected] + select_x
-        return np.mean(filters_layer[self.layer_selected][:, index, :, :])
+        return np.mean(filters_layer[self.layer_selected][:, index, :, :]), index

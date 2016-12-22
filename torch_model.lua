@@ -138,6 +138,20 @@ function Flashlight:backward_layer(activation_output, index)
     return grad:float()
 end
 
+function Flashlight:backward_test(forward_inputs)
+    forward_inputs = self:set_backend(forward_inputs)
+    local modules_n = #self.net.modules
+    temp = forward_inputs:clone()
+    for i=modules_n,1,-1 do
+        grad = self.net.modules[i]:backward(self.last_input, temp)
+        tmp = grad:clone()
+        print(i)
+        print(torch.type(self.net.modules[i]))
+        --temp = grad:clone()
+    end
+    return 0
+end
+
 -- Retrieve the filter responses caused by passing the image through the model
 -- Each table of filter responses from a layer has a field 'ADDED_NAME' 
 -- added to it which contains the name of the layer type. This is to make

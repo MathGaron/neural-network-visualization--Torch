@@ -7,7 +7,11 @@ class Optimizer:
     def __init__(self, model):
         self.model = model
 
-    def make_step(self, image, objective_func, i, step_size=1.5, **objective_params):
+    # Regularization technique inspired from :
+    # https://github.com/google/deepdream/blob/master/dream.ipynb
+    # and
+    # https://arxiv.org/pdf/1506.06579v1.pdf
+    def make_step(self, image, objective_func, max_blur_iteration=10, l2_decay=0.01, pixel_clip=2,  **objective_params):
         jitter = 40
         ox, oy = np.random.randint(-jitter, jitter + 1, 2)
         image = np.roll(np.roll(image, ox, -1), oy, -2)  # apply jitter shift
@@ -15,32 +19,40 @@ class Optimizer:
         prediction = self.model.forward(image)
         prediction_grad = objective_func(prediction, **objective_params)
         image_grad = self.model.backward(prediction_grad)
+
         # for layer specific activation function
-        #index = 4
-        #image_grad = self.model.backward_layer(self.model.get_convolution_activation()[index], index)
+
+        """
+        convos = self.model.get_convolution_activation()[4] # faces : 147, 192, 6
+        convos[:, :, :, :] = 0
+        convos[:, 147, :, :] = 1
+        convos[:, 192, :, :] = 1
+        convos[:, 6, :, :] = 1
+        image_grad_1 = self.model.backward_layer(convos, 4)
+        convos = self.model.get_convolution_activation()[3] # faces 117 245 42
+        convos[:, :, :, :] = 0
+        convos[:, 117, :, :] = 1
+        convos[:, 245, :, :] = 1
+        #convos[:, 42, :, :] = 1
+        image_grad_2 = self.model.backward_layer(convos, 3)
         #optimize
+        image_grad = image_grad_1 + image_grad_2
+        """
 
-        #image_grad = Optimizer.l2_decay(image_grad, 0.01)
-
-        rand_iter = random.randint(1, 10)
+        # Apply random gaussian blur on gradient
+        rand_iter = random.randint(1, max_blur_iteration)
         rand_kernel = random.choice([3, 7, 9])
         image_grad = Optimizer.gaussian_blur(image_grad, iterations=rand_iter, kernel=rand_kernel)
         rand_step = random.uniform(0.7, 1.7)
+
+        # Optimize
         grads = float(rand_step) / np.abs(image_grad).mean() * image_grad
         image += grads
 
-        image = np.roll(np.roll(image, -ox, -1), -oy, -2)  # unshift image
-
-        # regularize
-        cv2.imshow("out", image[0, :, :, :].T)
-        image = Optimizer.l2_decay(image, 0.01)
-        image = Optimizer.pixel_norm_clip(image, 2)
-
-        #cv2.imshow("clip", image[0, :, :, :].T)
-
-        #if i % 1 == 0:
-        #    image = Optimizer.gaussian_blur(image, iterations=1, kernel=9)
-        #    cv2.imshow("gaussian", image[0, :, :, :].T)
+        # Regularize image
+        image = np.roll(np.roll(image, -ox, -1), -oy, -2)
+        image = Optimizer.l2_decay(image, l2_decay)
+        image = Optimizer.pixel_norm_clip(image, pixel_clip)
 
         return image
 
@@ -83,11 +95,9 @@ class Optimizer:
     @staticmethod
     def objective_maximize_class(data, index=0, energy=0.5):
         class_grad = data[0, index]
-        print(class_grad)
         grad = np.zeros(data.shape)
-        grad[:, :] = 0
-        #grad *= energy
         grad[0, index] = (1. - class_grad) + 0.0000000001
+        # if the image is otimized, invert the gradient
         if class_grad == 1:
-            grad[0, index] = -0.1
+            grad[0, index] = -energy
         return grad

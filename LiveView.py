@@ -78,9 +78,10 @@ if __name__ == '__main__':
                    cv2.resize(filter_grid, (LAYER_SCREEN_SIZE, LAYER_SCREEN_SIZE), interpolation=cv2.INTER_CUBIC))
         print("layer mean activation : {}".format(activation_viewer.get_layer_mean_activation(filters)))
         if filter_img is not None:
-            print("filter mean activation : {}".format(activation_viewer.get_selected_filter_mean_activation(filters)))
+            mean, index = activation_viewer.get_selected_filter_mean_activation(filters)
+            print("filter mean activation : {}".format(mean))
             filter_img = cv2.resize(filter_img, (300, 300), interpolation=cv2.INTER_CUBIC)
-            cv2.imshow("filter_image", filter_img)
+            cv2.imshow("filter #{}".format(index), filter_img)
 
         # keyboard control
         k = cv2.waitKey(33)
@@ -88,6 +89,8 @@ if __name__ == '__main__':
             break
         elif k == 1113939:  # left arrow
             activation_viewer.layer_selection_increment(1)
+            print("layer selected : {}".format(activation_viewer.layer_selected))
         elif k == 1113937:  # right arrow
             activation_viewer.layer_selection_increment(-1)
+            print("layer selected : {}".format(activation_viewer.layer_selected))
     cv2.destroyAllWindows()
