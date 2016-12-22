@@ -149,5 +149,5 @@ if __name__ == '__main__':
         '''
         # TODO cut the a sub-graph out from the whole.
         print("Time : {}".format(time.time() - start_time))
-        print 'Close'
+        print('Close')
         # with graphTF.sess:

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from BackendBase import BackendBase
+from DeepLearningBackend.BackendBase import BackendBase
 import os
 
 # test function
@@ -8,6 +8,9 @@ import numpy as np
 
 
 class TensorflowBackend(BackendBase):
+
+    def backward_layer(self, grad, index):
+        raise Exception("backward_layer not implemented!")
 
     def __init__(self, sess=None):
         tf.reset_default_graph()
@@ -81,7 +84,7 @@ class TensorflowBackend(BackendBase):
         weights = {}
         for var in all_vars:
             weights.update({var.name: var.eval(session=self.sess)})
-            print var.name
+            print(var.name)
         return weights
 
     def get_ops(self, name=''):
@@ -120,7 +123,7 @@ if __name__ == '__main__':
         for v in all_vars:
             print(v.name)
         pred = modelTF.forward(img)
-        print pred
+        print(pred)
         loss = modelTF.get_ops('pool4')  # try to compute the gradient from middle
         modelTF.backward(None, variables=[])
-        print 'done'
+        print('done')

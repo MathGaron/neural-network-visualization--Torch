@@ -1,4 +1,4 @@
-from TensorflowBackend import TensorflowBackend
+from DeepLearningBackend.TensorflowBackend import TensorflowBackend
 # python3
 # from InputGenerators.LoaderBase import DataCaltech101Example
 # python2
@@ -32,7 +32,7 @@ ims, labels = loader.next()
 model.forward(ims)
 activations = model.get_convolution_activation()
 most_activated = sortActivations(activations)
-print most_activated
+print(most_activated)
 
 # do a forward pass
 loader = InputGenerators.DataCaltech101Example()
