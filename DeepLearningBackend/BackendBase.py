@@ -6,6 +6,15 @@ class BackendBase:
         self.processing_backend = processing_backend
 
     @abstractmethod
+    def load(self, path):
+        """
+        Load model from path
+        :param path:
+        :return:
+        """
+        pass
+
+    @abstractmethod
     def forward(self, input):
         """
         Compute the model's forward step. store the activation function of each layers

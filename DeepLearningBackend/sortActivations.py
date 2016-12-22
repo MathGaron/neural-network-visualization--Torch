@@ -5,14 +5,12 @@ from DeepLearningBackend.TensorflowBackend import TensorflowBackend
 import imp
 InputGenerators = imp.load_source('LoaderBase', '../InputGenerators/LoaderBase.py')
 
-# test function
-from scipy.misc import imread, imresize
 import numpy as np
 
 # select Torch or Tensorflow as backend
 tfmodel = '/home-local/jizha16.extra.nobkp/data/ml/vgg16-tfmodel.meta'
 model = TensorflowBackend()
-model.load_tf_model(tfmodel)
+model.load(tfmodel)
 
 
 def sortActivations(activations):
@@ -22,7 +20,7 @@ def sortActivations(activations):
         activation = np.asarray(activation)
         act_sum = np.sum(activation, axis=(0, 1, 2))  # sum or mean follow the same order
         ind = np.argsort(act_sum)[::-1]
-        most_activated.appedn(ind)
+        most_activated.append(ind)
     return most_activated  # just return an index
 
 

@@ -72,15 +72,8 @@ function Flashlight:set_backend(module)
     end
 end
 
--------------------------------------------------------------------------------
-------------------------VISUALIZATION FUNCTIONS--------------------------------
--------------------------------------------------------------------------------
--- Load a pre-trained model, remove all SpatialBatchNormalization layers
--- SpatialBatchNormalization requires batches of images, visualization 
--- explicitly uses only a single image
--- There may be other layer types that have this problem that I am unaware of
-function Flashlight:load_model()
-    local net = torch.load('model-nets/model--float.net')
+function Flashlight:load(path)
+    local net = torch.load(path)
     self:remove_batch_norm(net)
     print(net)
     self.net = self:set_backend(net)

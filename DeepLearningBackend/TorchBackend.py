@@ -9,6 +9,9 @@ class TorchBackend(BackendBase):
         self.model = Flashlight(self.processing_backend)
         self.model.clear_gnu_plots()
 
+    def load(self, path):
+        self.model.load(path)
+
     def load_cafe_model(self, prototxt, caffemodel):
         self.model.load_caffe_model(prototxt, caffemodel)
 

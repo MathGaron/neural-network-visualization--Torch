@@ -19,7 +19,7 @@ class TensorflowBackend(BackendBase):
         self.sess = sess
         self.model = None
 
-    def load_tf_model(self, tfmodel):
+    def load(self, tfmodel):
         # tfmodel: any model saved from TF. /home-local/jizha16.extra.nobkp/data/ml/vgg16-tfmodel.meta
         self.model = tf.train.import_meta_graph(tfmodel)
         self.model.restore(self.sess, tf.train.latest_checkpoint(os.path.split(tfmodel)[0]))
