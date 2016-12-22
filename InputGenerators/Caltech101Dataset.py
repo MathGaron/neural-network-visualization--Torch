@@ -3,17 +3,17 @@ import os
 import glob2
 import math
 import cv2
-import numpy as np
 
 
-class DataCaltech101Example(DataLoader):
-    def __init__(self, path):
+class Caltech101Dataset(DataLoader):
+    def __init__(self, path, label):
         self.data_path = path
         self.file_list = glob2.glob(os.path.join(self.data_path, '*/*.jpg'))
         self.labels = [os.path.split(os.path.split(p)[0])[1] for p in self.file_list]
         self.classes = list(set(self.labels))
+        self.setClass_(label)
 
-    def setClass(self, label='pizza'):
+    def setClass_(self, label):
         indices = [i for i, s in enumerate(self.labels) if label in s]
         labels = [self.labels[i] for i in indices]
         file_list = [self.file_list[i] for i in indices]
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     get dataset from:
     http://www.vision.caltech.edu/Image_Datasets/Caltech101/
     '''
-    loader = DataCaltech101Example('/home/mathieu/Dataset/101_ObjectCategories')
+    loader = Caltech101Dataset('/home/mathieu/Dataset/101_ObjectCategories')
     loader.setClass(label='beaver')
     for data in loader:
         cv2.imshow("test", data)
