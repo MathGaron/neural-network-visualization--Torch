@@ -2,7 +2,7 @@ import cv2
 
 
 class CameraInputGenerator:
-    def __init__(self, index = 0):
+    def __init__(self, index=0):
         self.cap = cv2.VideoCapture(index)
 
     def __iter__(self):
