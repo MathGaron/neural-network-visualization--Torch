@@ -11,36 +11,41 @@ class Optimizer:
     # https://github.com/google/deepdream/blob/master/dream.ipynb
     # and
     # https://arxiv.org/pdf/1506.06579v1.pdf
-    def make_step(self, image, objective_func, max_blur_iteration=10, l2_decay=0.01, pixel_clip=2,  **objective_params):
+    def make_step(self, image, objective_func, max_blur_iteration=10, l2_decay=0.01, pixel_clip=2,
+                  sorted_activation=None,
+                  **objective_params):
         jitter = 40
         ox, oy = np.random.randint(-jitter, jitter + 1, 2)
         image = np.roll(np.roll(image, ox, -1), oy, -2)  # apply jitter shift
         #forward and backprop, objective function compute error gradient
         prediction = self.model.forward(image)
         prediction_grad = objective_func(prediction, **objective_params)
-        image_grad = self.model.backward(prediction_grad)
+        convos, linears = self.model.get_activation()
+        image_grad = np.zeros(image.shape).astype(np.float64)
+        # Do normal backprop
+        if sorted_activation is None:
+            image_grad = self.model.backward(prediction_grad)
+            norm_im = image_grad[0, :, :, :].T.copy()
+            cv2.normalize(image_grad[0, :, :, :].T, norm_im, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        # Do backprop based on most activated units
+        else:
+            convo_indexes, linear_indexes = sorted_activation
+            for i, activation in enumerate(convo_indexes):
+                if i > 3:
+                    convos_grad = np.zeros(convos[i].shape, dtype=convos[i].dtype)
+                    convos_grad[:, activation[:7], :, :] = 0.3 * i
+                    grad = self.model.backward_layer(convos_grad, i)
+                    image_grad += grad
+            for i, activation in enumerate(linear_indexes):
+                if i <= 0:
+                    linear_grad = np.zeros(linears[i].shape, dtype=linears[i].dtype)
+                    linear_grad[:, activation[:5]] = linears[i][:, activation[:5]]
+                    grad = self.model.backward_layer(linear_grad, i)
+                    image_grad += grad
 
-        # for layer specific activation function
-
-        """
-        convos = self.model.get_convolution_activation()[4] # faces : 147, 192, 6
-        convos[:, :, :, :] = 0
-        convos[:, 147, :, :] = 1
-        convos[:, 192, :, :] = 1
-        convos[:, 6, :, :] = 1
-        image_grad_1 = self.model.backward_layer(convos, 4)
-        convos = self.model.get_convolution_activation()[3] # faces 117 245 42
-        convos[:, :, :, :] = 0
-        convos[:, 117, :, :] = 1
-        convos[:, 245, :, :] = 1
-        #convos[:, 42, :, :] = 1
-        image_grad_2 = self.model.backward_layer(convos, 3)
-        #optimize
-        image_grad = image_grad_1 + image_grad_2
-        """
 
         # Apply random gaussian blur on gradient
-        rand_iter = random.randint(1, max_blur_iteration)
+        rand_iter = random.randint(3, max_blur_iteration)
         rand_kernel = random.choice([3, 7, 9])
         image_grad = Optimizer.gaussian_blur(image_grad, iterations=rand_iter, kernel=rand_kernel)
         rand_step = random.uniform(0.7, 1.7)

@@ -11,6 +11,7 @@ function Flashlight:__init(backend)
     if self.backend == "cuda" then
         require 'cunn'
     end
+    self.truncated_nets = {}
 
 end
 
@@ -103,9 +104,8 @@ function Flashlight:predict(image)
 end
 
 function Flashlight:backward(forward_output)
-    -- backend transfer
     forward_output = self:set_backend(forward_output)
-    return self.net:backward(self.last_input, forward_output):float() -- L2 distance for grad
+    return self.net:backward(self.last_input, forward_output):float()
 end
 
 function Flashlight:truncate_network(net, index)
@@ -118,6 +118,7 @@ function Flashlight:truncate_network(net, index)
             delete = true
         end
     end
+    return net
 end
 
 function Flashlight:backward_layer(activation_output, index)
@@ -131,25 +132,6 @@ function Flashlight:backward_layer(activation_output, index)
     return grad:float()
 end
 
-function Flashlight:backward_test(forward_inputs)
-    forward_inputs = self:set_backend(forward_inputs)
-    local modules_n = #self.net.modules
-    temp = forward_inputs:clone()
-    for i=modules_n,1,-1 do
-        grad = self.net.modules[i]:backward(self.last_input, temp)
-        tmp = grad:clone()
-        print(i)
-        print(torch.type(self.net.modules[i]))
-        --temp = grad:clone()
-    end
-    return 0
-end
-
--- Retrieve the filter responses caused by passing the image through the model
--- Each table of filter responses from a layer has a field 'ADDED_NAME' 
--- added to it which contains the name of the layer type. This is to make
--- reviewing filter responses and mapping them back to layers easier...
--- Return the filter responses in a table 
 function Flashlight:get_activation()
     self.filterResponses = {}
     count = 0
@@ -163,20 +145,7 @@ function Flashlight:get_activation()
     return self.filterResponses
 end
 
-function Flashlight:get_convolution_filters()
-    self.filterWeights = {}
-    for i, curModule in ipairs(self.net.modules) do
-        curModule['ADDED_NAME'] = torch.type(curModule)
-        if curModule.ADDED_NAME == "nn.SpatialConvolution" then
-            local filter = curModule.weight.new()
-            filter:resize(curModule.weight:nElement())
-            filter:copy(curModule.weight)
-            table.insert(self.filterWeights, filter:float())
-            --print(curModule.weight:size()) : first layer : 96*3*7*7, next : 256*96*5*5
-        end
-    end
-    --return self.filterWeights
-end
+
 
 -- Close all gnuplot windows
 function Flashlight:clear_gnu_plots()

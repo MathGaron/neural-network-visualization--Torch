@@ -36,7 +36,10 @@ def get_activation_sum(activations):
     most_activated = []
     for activation in activations:
         activation = np.asarray(activation)
-        act_sum = np.sum(activation, axis=(0, 2, 3))  # sum or mean follow the same order
+        if len(activation.shape) == 2:
+            act_sum = np.sum(activation, axis=0)
+        else:
+            act_sum = np.sum(activation, axis=(0, 2, 3))  # sum or mean follow the same order
         most_activated.append(act_sum)
     return most_activated
 
@@ -80,13 +83,14 @@ if __name__ == '__main__':
 
     # run webcam or dataset
     #input_generator = CameraInputGenerator()
-    input_generator = Caltech101Dataset(settings["data_path"], 'pizza')
+    input_generator = Caltech101Dataset(settings["data_path"], 'ferry')
 
     cv2.namedWindow("filters")
     cv2.setMouseCallback("filters", mouse_click)
     filters = None
     fps = time.time()
     convo_accumulator = []
+    linear_accumulator = []
     for input in input_generator:
         VGGPreProcessor.show_input(input)
 
@@ -94,13 +98,22 @@ if __name__ == '__main__':
         model.forward(processed_input)
 
         convo_filters, linear_filters = model.get_activation()
-        sorted_convo = get_activation_sum(convo_filters)
+        summed_convos = get_activation_sum(convo_filters)
+        summed_linears = get_activation_sum(linear_filters)
+
         if convo_accumulator:
-            for i in range(len(sorted_convo)):
-                convo_accumulator[i] += sorted_convo[i]
+            for i in range(len(summed_convos)):
+                convo_accumulator[i] += summed_convos[i]
         else:
-            for values in sorted_convo:
+            for values in summed_convos:
                 convo_accumulator.append(values)
+
+        if linear_accumulator:
+            for i in range(len(summed_linears)):
+                linear_accumulator[i] += summed_linears[i]
+        else:
+            for values in summed_linears:
+                linear_accumulator.append(values)
 
         while time.time() - fps <= float(settings["fps"]):
 
@@ -118,18 +131,19 @@ if __name__ == '__main__':
             # keyboard control
             k = cv2.waitKey(30)
             if k == 1048691:
-                indexes = sort_indexes(convo_accumulator)
-                # deep dream example:
+                convos_indexes = sort_indexes(convo_accumulator)
+                linear_indexes = sort_indexes(linear_accumulator)
                 b, g, r = VGGPreProcessor.getMeans()
                 dream_optimizer = ImageOptimization.Optimizer(model)
                 random_image = dream_optimizer.generate_gaussian_image((224, 224, 3), r, g, b)
                 dream = deep_dream_optimize(dream_optimizer, preprocessor, random_image,
-                                            iterations=70,
-                                            octave_n=4,
+                                            iterations=20,
+                                            octave_n=3,
                                             octave_scale=1.7,
                                             imagenet_index=583,
                                             gradient_energy=0.1,
-                                            debug_view=True)
+                                            debug_view=True,
+                                            sorted_activation=(convos_indexes, linear_indexes))
                 stretch = cv2.resize(dream, (224 * 3, 224 * 3), interpolation=cv2.INTER_CUBIC)
                 cv2.imshow("Dream", stretch)
                 cv2.imwrite("output.png", stretch)
@@ -138,10 +152,10 @@ if __name__ == '__main__':
                 sys.exit(0)
             if k == 1048608:
                 break
-            elif k == 1113937:  # left arrow
+            elif k == 1113939:  # left arrow
                 activation_viewer.layer_selection_increment(1)
                 print("layer selected : {}".format(activation_viewer.layer_selected))
-            elif k == 1113939:  # right arrow
+            elif k == 1113937:  # right arrow
                 activation_viewer.layer_selection_increment(-1)
                 print("layer selected : {}".format(activation_viewer.layer_selected))
         fps = time.time()

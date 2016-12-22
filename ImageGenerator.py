@@ -11,7 +11,7 @@ import ImageOptimization
 
 
 # Octave idea inspired from : https://github.com/google/deepdream/blob/master/dream.ipynb
-def deep_dream_optimize(optimizer, preprocessor, image, iterations=10, octave_n=2, octave_scale=1.3, imagenet_index=130, gradient_energy=0.1, debug_view=False):
+def deep_dream_optimize(optimizer, preprocessor, image, iterations=10, octave_n=2, octave_scale=1.3, imagenet_index=130, gradient_energy=0.1, debug_view=False, sorted_activation=None):
     # we could show the filters at each iterations here...
     octaves = [image.astype(np.float32)]
     for i in range(octave_n - 1):
@@ -29,7 +29,7 @@ def deep_dream_optimize(optimizer, preprocessor, image, iterations=10, octave_n=
         image = preprocessor.preprocess_input(image)
         for i in range(iterations):
             image = optimizer.make_step(image, ImageOptimization.Optimizer.objective_maximize_class, energy=gradient_energy,
-                                        index=imagenet_index)
+                                        index=imagenet_index, sorted_activation=sorted_activation)
             if debug_view:
                 cv2.imshow("test", preprocessor.preprocess_inverse(image).astype(np.uint8))
                 cv2.waitKey(20)
@@ -71,7 +71,7 @@ if __name__ == '__main__':
                                 iterations=70,
                                 octave_n=4,
                                 octave_scale=1.7,
-                                imagenet_index=583,    # 76:tarantula   #130:flamingo  #113:snail #340:zebra #323:monarch 327:seastar  980:volcano
+                                imagenet_index=327,    # 76:tarantula   #130:flamingo  #113:snail #340:zebra #323:monarch 327:seastar  980:volcano
                                 gradient_energy=0.1,
                                 debug_view=True)
     stretch = cv2.resize(dream, (224 * 3, 224 * 3), interpolation=cv2.INTER_CUBIC)

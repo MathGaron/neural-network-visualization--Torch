@@ -22,9 +22,12 @@ class TorchBackend(BackendBase):
         return self.model.backward(grad).asNumpyTensor()
 
     def backward_layer(self, grad, index):
-        filters = self.get_convolution_activation()
-        if grad.shape != filters[index].shape:
-            raise IndexError("Gradient shape must be {}".format(filters[index].shape))
+        convos, linears = self.get_activation()
+        if grad.shape != convos[index].shape:
+            if grad.shape != linears[index].shape:
+                raise IndexError("Gradient shape must be {}".format(convos[index].shape))
+            else:
+                index += len(convos) + 1
         grads = self.model.backward_layer(grad, index).asNumpyTensor()
         return grads
 
