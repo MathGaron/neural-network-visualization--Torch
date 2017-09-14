@@ -17,11 +17,18 @@ Python3
 
 - (optional) tensorflow
 - (optional) torch 7
-- pytorch (if using torch backend)
+- [pytorch by Hughperkins](https://github.com/hughperkins/pytorch) (if using torch backend)
 - opencv 3.1.0
-
-
 ---
+
+## Layer activation view interface
+![alt text](https://github.com/MathGaron/neural-network-visualization--Torch/raw/master/img/interface.png "Interface")
+
+
+## Backpropagation image generation
+<img src="https://github.com/MathGaron/neural-network-visualization--Torch/raw/master/img/flamingo.png" width="250"> <img src="https://github.com/MathGaron/neural-network-visualization--Torch/raw/master/img/blackwidow.png" width="250">
+
+<img src="https://github.com/MathGaron/neural-network-visualization--Torch/raw/master/img/monarch.png" width="250"> <img src="https://github.com/MathGaron/neural-network-visualization--Torch/raw/master/img/snails.png" width="250">
 
 
 #Licensing:
