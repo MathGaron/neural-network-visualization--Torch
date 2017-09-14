@@ -1,15 +1,15 @@
 Please change personal configuration in a local .json in config folder.
 
-###Current parameters:
+### Current parameters:
 - caffe_model_path : path where the caffe .prototxt and .caffemodel is. This is subject to change 
 - dataset_class_file : this is the path to the file where all model classes are listed
 - processing_backend : cuda or cpu
 - deep_learning_backend : torch or tensorflow
 
-###For torch vgg model
+### For torch vgg model
 Download caffe's model .prototxt and .caffemodel [Here](https://gist.github.com/ksimonyan/f194575702fae63b2829)
 
-###For tensorflow vgg model
+### For tensorflow vgg model
 (todo)
 
 ## Dependencies
@@ -31,7 +31,7 @@ Python3
 <img src="https://github.com/MathGaron/neural-network-visualization--Torch/raw/master/img/monarch.png" width="250"> <img src="https://github.com/MathGaron/neural-network-visualization--Torch/raw/master/img/snails.png" width="250">
 
 
-#Licensing:
+# Licensing:
 
 The MIT License (MIT)
 Copyright (c) 2016 Ethan Gaebel
